@@ -99,8 +99,9 @@ Each sales row is one `(product_id, business_date)` total with these fields:
 - `units_returned`
 - `net_units`
 - `day_status` (`open` or `closed`)
-- `complete`
 - `updated_at`
+
+A day with `day_status = closed` is final.
 
 Each page also carries the server's `high_watermark` (D-05).
 
@@ -108,7 +109,7 @@ Each page also carries the server's `high_watermark` (D-05).
 
 - **Interval:** the Brain polls `GET /canonical/sales` every 300 seconds.
 - **Watermark:** each poll asks for rows updated since `high_watermark − 120 s`. The overlap covers normal commit delays.
-- **Upsert:** rows are upserted by `(product_id, sales_date)` as absolute totals, so reading a row twice is harmless.
+- **Upsert:** rows are upserted by `(product_id, business_date)` as absolute totals, so reading a row twice is harmless.
 - **Ordering:** a row with an older `updated_at` never overwrites a newer one.
 - **Saving the watermark:** it's saved only after the last page, so a poll that crashes halfway just re-reads the same rows next time.
 - **Credentials:** the Brain calls the ERP with a service credential, as in the main plan.
@@ -174,8 +175,27 @@ order  = raw rounded up to pack_multiple, capped at max_order_qty
 | "Why" explanations | Explains a risk level or a recommendation in plain words. Example: "1.7 days of cover vs a 5-day lead time, so order 110" |
 
 - **Grounding rule (D-18):** every number comes from Brain code or ERP data, never from the LLM. The LLM may only phrase numbers that code has already computed.
-- **Offline mode (D-17):** if Gemini can't be reached, the chat shows "Assistant offline" and explanations fall back to templates. Forecasting, risk, recommendations and rule-built proposals keep working.
+- **Offline mode (D-17):** if Gemini can't be reached, the chat shows "Assistant offline" and explanations fall back to templates. Forecasting, risk, recommendations and rule-built proposals keep working. The morning briefing isn't available while Gemini is unreachable; its place shows "Assistant offline".
 - **LLM:** Google Gemini. The model ID is configurable (for example `gemini-2.5-flash`).
+
+### 4.7 Default parameters
+
+From the main plan. Configurable, not hardcoded.
+
+| Area | Parameter | Value |
+|---|---|---|
+| Anomaly | z-score threshold | 4 |
+| Anomaly | Minimum history before anomaly checks | 28 days |
+| Order | `review_period` | 0 days |
+| Order | `safety_stock` | ceil(1.65 × daily std dev × √lead_time); if std dev is unavailable, 1 day of mean demand |
+| Order | `pack_multiple` when unknown | 1 |
+| Order | Order quantity when raw ≤ 0 | 0 (no order) |
+| Forecast | Horizon | 14 days |
+| Forecast | Backtest window | 4 weeks |
+| Forecast | Minimum history before LightGBM is considered | 8 weeks (otherwise seasonal-naive) |
+| Forecast | LightGBM must beat seasonal-naive backtest WAPE by | 0.05 |
+| Forecast | Low/high range | Quantile, 80% coverage |
+| Forecast | Degradation factor (live WAPE vs backtest WAPE) | 1.5 |
 
 ---
 
@@ -235,6 +255,7 @@ None of these were decided while scoping:
 - The exact CSV column names, and how many products the synthetic dataset has.
 - The login token mechanism, how `brain-api` verifies a signed-in manager, and the format of the Brain's service credential for the ERP.
 - The LightGBM feature set for 90 days of history.
+- When an anomaly counts as "high" (severity tiers).
 - The `brain_db` and `erp_db` table lists.
 - Library choices beyond section 6: ORM and migrations, job scheduler, Gemini client library, React tooling.
 - Main-plan rules this scoping didn't cover:
