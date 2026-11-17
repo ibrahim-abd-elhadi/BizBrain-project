@@ -26,6 +26,8 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    # Deliberately its own engine, without transaction_timeout: a slow migration (for example a
+    # backfill) is never cut off halfway. Migrations write no sales updated_at (research R-07, 3a).
     engine = create_engine(get_settings().erp_database_url, poolclass=pool.NullPool)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

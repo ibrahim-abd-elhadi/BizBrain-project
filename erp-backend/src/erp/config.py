@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     # Seed generator: a fixed seed makes every reseed identical (research R-17).
     erp_seed_random_seed: int = 20261202
 
+    # Canonical API (feature 002).
+    # Lifetime of a newly issued Brain service token (research R-03).
+    erp_service_token_ttl_days: int = Field(default=90, gt=0)
+    # Longest a request-serving transaction may run; at most 100 keeps the commit delay below the
+    # Brain's 120-second polling overlap (research R-07). Alembic and the seed run without it.
+    erp_db_transaction_timeout_seconds: int = Field(default=60, ge=1, le=100)
+
 
 @lru_cache
 def get_settings() -> Settings:

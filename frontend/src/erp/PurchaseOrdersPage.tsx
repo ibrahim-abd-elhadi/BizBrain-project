@@ -1,22 +1,25 @@
 import { CheckOutlined } from "@ant-design/icons";
-import { Button, Card, Table } from "antd";
+import { Button, Card, Table, Tag, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import { useMemo, useState } from "react";
 import { apiFetch } from "../api/client";
-import type { Product, PurchaseOrder } from "../api/types";
+import type { Product, PurchaseOrder, Supplier } from "../api/types";
 import { messageOf, useApiData } from "../api/useApiData";
 import { ErrorAlert } from "../components/ErrorAlert";
 import { PageHeader } from "../components/PageHeader";
 import { StatusTag } from "../components/StatusTag";
-import { byNumber, pagination } from "../components/table";
+import { byNumber, byText, pagination } from "../components/table";
 
 const when = (value: string | null) => (value ? new Date(value).toLocaleString() : "—");
 
-// The manager can only confirm a draft: there is no create, edit or delete (FR-017, FR-022).
-// Confirming treats the ordered quantities as received, so stock goes up (FR-024).
+// Drafts come from the Brain through the Canonical API (feature 002), or by hand for testing.
+// The manager can only confirm a draft: there is no create, edit, cancel or delete (FR-017,
+// FR-022). Confirming treats the ordered quantities as received, so stock goes up (FR-024).
+// Each order shows its supplier, and a Brain draft who approved it and when (feature 002 FR-029a).
 export function PurchaseOrdersPage() {
   const { data: orders, error, loading, reload } = useApiData<PurchaseOrder[]>("/purchase-orders");
   const { data: products } = useApiData<Product[]>("/products");
+  const { data: suppliers } = useApiData<Supplier[]>("/suppliers");
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<number | null>(null);
 
@@ -24,6 +27,12 @@ export function PurchaseOrdersPage() {
     () => Object.fromEntries((products ?? []).map((p) => [p.product_id, p.name])),
     [products],
   );
+  const supplierNames = useMemo(
+    () => Object.fromEntries((suppliers ?? []).map((s) => [s.supplier_id, s.name])),
+    [suppliers],
+  );
+  const supplierLabel = (o: PurchaseOrder) =>
+    supplierNames[o.supplier_id] ? `${supplierNames[o.supplier_id]} (${o.supplier_id})` : o.supplier_id;
 
   async function confirm(poId: number) {
     setActionError(null);
@@ -50,6 +59,29 @@ export function PurchaseOrdersPage() {
         { text: "confirmed", value: "confirmed" },
       ],
       onFilter: (value, o) => o.status === value,
+    },
+    {
+      title: "Supplier",
+      dataIndex: "supplier_id",
+      render: (_, o) => supplierLabel(o),
+      sorter: byText(supplierLabel),
+    },
+    {
+      title: "Origin",
+      key: "origin",
+      render: (_, o) =>
+        o.created_by === "agent" ? (
+          <div className="origin">
+            <Tag color="geekblue">Created by the Brain</Tag>
+            {o.approval ? (
+              <Typography.Text type="secondary" className="origin-approval">
+                Approved by {o.approval.approved_by}, {when(o.approval.approved_at)}
+              </Typography.Text>
+            ) : null}
+          </div>
+        ) : (
+          <span data-origin="human">—</span>
+        ),
     },
     {
       title: "Created",

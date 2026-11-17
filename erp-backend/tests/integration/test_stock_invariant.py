@@ -86,10 +86,11 @@ def test_stock_matches_the_events_after_200_random_actions(
             elif kind == "confirm":
                 picked = rng.sample(product_ids, rng.randint(1, 3))
                 order = PurchaseOrder(
+                    supplier_id="S001",
                     lines=[
                         PurchaseOrderLine(product_id=p, quantity=rng.randint(1, 120))
                         for p in picked
-                    ]
+                    ],
                 )
                 db.add(order)
                 db.commit()

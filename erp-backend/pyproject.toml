@@ -31,6 +31,7 @@ test = [
     "pytest-cov==7.1.0",
     "ruff==0.17.5",
     "PyYAML==6.0.3",
+    "jsonschema==4.26.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -39,6 +40,10 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint.isort]
+# tests/ is on sys.path (it holds conftest.py), so its helper module imports as a local one.
+known-local-folder = ["canonical_support"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

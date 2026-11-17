@@ -22,7 +22,9 @@ Headers = dict[str, str]
 def draft(db: Session, catalog: None) -> int:
     """A draft purchase order with the line P001 x 60, and P001's stock at 10."""
     db.execute(update(Stock).where(Stock.product_id == "P001").values(on_hand=10))
-    order = PurchaseOrder(lines=[PurchaseOrderLine(product_id="P001", quantity=60)])
+    order = PurchaseOrder(
+        supplier_id="S001", lines=[PurchaseOrderLine(product_id="P001", quantity=60)]
+    )
     db.add(order)
     db.commit()
     return order.po_id
@@ -49,6 +51,40 @@ def test_list_shows_the_draft_with_its_lines(
     assert one.status_code == 200
     assert one.json()["status"] == "draft"
 
+    # Feature 002 (FR-029a, research R-13): the supplier, the creator and the approval block.
+    assert order["supplier_id"] == "S001"
+    assert order["created_by"] == "human"
+    assert order["approval"] is None
+    assert order["updated_at"]
+
+
+def test_a_brain_draft_shows_its_approval(
+    client: TestClient, db: Session, auth_headers: Headers, catalog: None
+) -> None:
+    import uuid
+    from datetime import UTC, datetime
+
+    proposal = uuid.uuid4()
+    approved_at = datetime(2026, 11, 18, 11, 2, tzinfo=UTC)
+    order = PurchaseOrder(
+        supplier_id="S001",
+        created_by="agent",
+        approval_proposal_id=proposal,
+        approval_approved_by="manager",
+        approval_approved_at=approved_at,
+        approval_arguments_sha256="d" * 64,
+        lines=[PurchaseOrderLine(product_id="P002", quantity=12)],
+    )
+    db.add(order)
+    db.commit()
+
+    body = client.get(f"{BASE}/purchase-orders/{order.po_id}", headers=auth_headers).json()
+    assert body["created_by"] == "agent"
+    assert body["approval"]["proposal_id"] == str(proposal)
+    assert body["approval"]["approved_by"] == "manager"
+    assert datetime.fromisoformat(body["approval"]["approved_at"]) == approved_at
+    assert body["approval"]["arguments_sha256"] == "d" * 64
+
 
 def test_confirming_adds_the_lines_to_stock(
     client: TestClient, db: Session, auth_headers: Headers, draft: int
@@ -59,6 +95,9 @@ def test_confirming_adds_the_lines_to_stock(
     assert body["status"] == "confirmed"
     assert body["confirmed_at"] is not None
     assert _on_hand(db) == 70
+    db.expire_all()
+    order = db.get(PurchaseOrder, draft)
+    assert order is not None and order.updated_at == order.confirmed_at  # feature 002, R-17
 
 
 def test_confirming_twice_adds_nothing_the_second_time(
@@ -97,7 +136,9 @@ def test_unknown_order_is_not_found(client: TestClient, auth_headers: Headers, d
 def test_list_filters_by_status_and_lists_newest_first(
     client: TestClient, db: Session, auth_headers: Headers, draft: int
 ) -> None:
-    second = PurchaseOrder(lines=[PurchaseOrderLine(product_id="P002", quantity=30)])
+    second = PurchaseOrder(
+        supplier_id="S001", lines=[PurchaseOrderLine(product_id="P002", quantity=30)]
+    )
     db.add(second)
     db.commit()
     client.post(f"{BASE}/purchase-orders/{draft}/confirm", headers=auth_headers)

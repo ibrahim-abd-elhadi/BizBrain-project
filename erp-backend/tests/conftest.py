@@ -28,6 +28,7 @@ _state = {"started": False}
 
 
 def _reset_app_caches() -> None:
+    from erp.canonical.cursor import reset_key_cache
     from erp.config import get_settings
     from erp.db import reset_caches
     from erp.security import _load_key
@@ -35,6 +36,7 @@ def _reset_app_caches() -> None:
     reset_caches()
     get_settings.cache_clear()
     _load_key.cache_clear()
+    reset_key_cache()
 
 
 @pytest.fixture(scope="session")
@@ -67,19 +69,21 @@ def _clean_database() -> Iterator[None]:
     yield
     if not _state["started"]:
         return
-    from erp.db import get_sessionmaker
+    from erp.db import get_unlimited_sessionmaker
     from erp.seed.__main__ import reset_all
 
-    with get_sessionmaker()() as session:
+    with get_unlimited_sessionmaker()() as session:
         reset_all(session)
         session.commit()
 
 
 @pytest.fixture
 def db(pg: PostgresContainer) -> Iterator[Session]:
-    from erp.db import get_sessionmaker
+    # Unlimited: a long test that keeps this session mid-transaction must not be cut off by the
+    # 60-second limit that request-serving connections carry (feature 002, research R-07).
+    from erp.db import get_unlimited_sessionmaker
 
-    with get_sessionmaker()() as session:
+    with get_unlimited_sessionmaker()() as session:
         yield session
 
 
@@ -177,3 +181,41 @@ def seed(db: Session) -> Callable[[], None]:
         db.commit()
 
     return _run
+
+
+@pytest.fixture
+def service_token(pg: PostgresContainer) -> Callable[..., str]:
+    """service_token(scopes=..., days=None) -> a Brain service token issued at the current
+    (possibly frozen) clock, like `login`. The default carries both Canonical scopes."""
+    from erp.security import SERVICE_SCOPES, create_service_token
+
+    def _make(scopes: tuple[str, ...] = SERVICE_SCOPES, days: int | None = None) -> str:
+        token, _, _ = create_service_token(scopes=scopes, days=days)
+        return token
+
+    return _make
+
+
+@pytest.fixture
+def canon_headers(service_token: Callable[..., str]) -> dict[str, str]:
+    """Authorization header with a full-scope service token, issued when the fixture runs."""
+    return {"Authorization": f"Bearer {service_token()}"}
+
+
+@pytest.fixture
+def temp_signing_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
+    """A throwaway Ed25519 key for unit tests that need no database. Restores the caches after."""
+    key_file = tmp_path / "unit_ed25519.pem"
+    key_file.write_bytes(
+        Ed25519PrivateKey.generate().private_bytes(
+            Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()
+        )
+    )
+    monkeypatch.setenv("ERP_JWT_PRIVATE_KEY_FILE", str(key_file))
+    monkeypatch.setenv(
+        "ERP_DATABASE_URL", os.environ.get("ERP_DATABASE_URL", "postgresql+psycopg://unused/unused")
+    )
+    _reset_app_caches()
+    yield key_file
+    monkeypatch.undo()
+    _reset_app_caches()

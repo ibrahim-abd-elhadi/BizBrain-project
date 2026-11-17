@@ -152,6 +152,22 @@ body {
   padding-inline-start: 18px;
 }
 
+/* Purchase orders: "Created by the Brain" with who approved it and when, stacked. */
+.origin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.origin .ant-tag {
+  margin-inline-end: 0;
+}
+
+.origin-approval {
+  font-size: 12px;
+}
+
 .form-error {
   margin-block-end: 16px;
 }

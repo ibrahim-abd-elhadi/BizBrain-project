@@ -257,7 +257,7 @@ None of these were decided while scoping:
 - The LightGBM feature set for 90 days of history.
 - When an anomaly counts as "high" (severity tiers).
 - The `brain_db` and `erp_db` table lists.
-- Library choices beyond section 6: ORM and migrations, job scheduler, Gemini client library, React tooling.
+- Library choices beyond section 6: ORM and migrations, job scheduler, Gemini client library, React tooling, test tools, and support libraries the fixed stack needs to run (for example the ASGI server and database driver).
 - Main-plan rules this scoping didn't cover:
   - at most one live proposal per recommendation (D-30)
   - a fresh approval round after a failed execution (D-43)

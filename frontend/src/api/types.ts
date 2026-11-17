@@ -56,10 +56,22 @@ export interface PurchaseOrderLine {
   quantity: number;
 }
 
+// The approval block a draft from the Brain carries (feature 002, FR-029a).
+export interface Approval {
+  proposal_id: string;
+  approved_by: string;
+  approved_at: string;
+  arguments_sha256: string;
+}
+
 export interface PurchaseOrder {
   po_id: number;
   status: "draft" | "confirmed";
+  supplier_id: string;
+  created_by: "human" | "agent";
+  approval: Approval | null;
   created_at: string;
+  updated_at: string;
   confirmed_at: string | null;
   lines: PurchaseOrderLine[];
 }

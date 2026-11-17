@@ -4,11 +4,13 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 
 from erp.api import auth, inventory, products, purchase_orders, sales, suppliers
+from erp.canonical.app import canonical_app
 from erp.db import get_sessionmaker
 from erp.errors import register_error_handlers
 from erp.services.day_close import close_past_days
 
-# The ERP's own API. /api/v1/canonical/* belongs to feature 002 and is not mounted here.
+# The ERP's own API, for the manager's screens. The Canonical API, for the Brain, is a separate
+# application mounted below with its own error format and service-token auth (feature 002 R-01).
 api = APIRouter(prefix="/api/v1/erp")
 api.include_router(auth.router)
 api.include_router(suppliers.router)
@@ -30,3 +32,4 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="BizBrain ERP", lifespan=lifespan)
 register_error_handlers(app)
 app.include_router(api)
+app.mount("/api/v1/canonical", canonical_app)

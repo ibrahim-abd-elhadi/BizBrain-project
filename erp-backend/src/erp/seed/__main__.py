@@ -11,7 +11,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from erp.config import Settings, get_settings
-from erp.db import get_sessionmaker
+from erp.db import get_unlimited_sessionmaker
 from erp.models import Base, ManagerAccount
 from erp.seed.catalog import seed_catalog
 from erp.seed.history import seed_history
@@ -58,7 +58,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     settings = get_settings()
-    session = get_sessionmaker()()
+    # No transaction_timeout: the seed is never cut off halfway (research R-07, point 3a).
+    session = get_unlimited_sessionmaker()()
     try:
         run_seed(session, settings, reset=args.reset)
         session.commit()
