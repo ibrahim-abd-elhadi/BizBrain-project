@@ -10,6 +10,7 @@ from erp.clock import today_cairo
 from erp.config import Settings, get_settings
 from erp.db import SessionDep
 from erp.errors import ErpError
+from erp.ids import PRODUCT_ID_PATTERN
 from erp.models import DailySales
 from erp.schemas.sales import SalesList
 from erp.schemas.simulate import SimulateRequest, SimulateResult
@@ -26,7 +27,7 @@ def list_sales(
     session: SessionDep,
     from_: Annotated[date | None, Query(alias="from")] = None,
     to: date | None = None,
-    product_id: Annotated[str | None, Query(pattern=r"^P[0-9]{3}$")] = None,
+    product_id: Annotated[str | None, Query(pattern=PRODUCT_ID_PATTERN)] = None,
 ) -> SalesList:
     close_past_days(session)
     today = today_cairo()

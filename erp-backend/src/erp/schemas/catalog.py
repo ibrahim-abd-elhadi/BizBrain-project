@@ -3,6 +3,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
+from erp.ids import SUPPLIER_ID_PATTERN
+
 Name = Annotated[str, Field(min_length=1, max_length=120)]
 PositiveInt = Annotated[StrictInt, Field(ge=1)]
 NonNegativeInt = Annotated[StrictInt, Field(ge=0)]
@@ -61,7 +63,7 @@ class Product(BaseModel):
 
 class ProductCreate(_Request):
     name: Name
-    preferred_supplier_id: str = Field(pattern=r"^S[0-9]{3}$")
+    preferred_supplier_id: str = Field(pattern=SUPPLIER_ID_PATTERN)
     pack_multiple: PositiveInt
     max_order_qty: PositiveInt
     starting_stock: NonNegativeInt = 0
@@ -69,7 +71,7 @@ class ProductCreate(_Request):
 
 class ProductUpdate(_Update):
     name: Name | None = None
-    preferred_supplier_id: str | None = Field(default=None, pattern=r"^S[0-9]{3}$")
+    preferred_supplier_id: str | None = Field(default=None, pattern=SUPPLIER_ID_PATTERN)
     pack_multiple: PositiveInt | None = None
     max_order_qty: PositiveInt | None = None
 

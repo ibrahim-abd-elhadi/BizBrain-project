@@ -7,7 +7,7 @@ from erp.clock import now_utc
 from erp.models.base import Base
 
 # S001, S002, ... assigned by the database and never changed (research R-21).
-SUPPLIER_ID_DEFAULT = "'S' || lpad(nextval('supplier_code_seq')::text, 3, '0')"
+SUPPLIER_ID_DEFAULT = "readable_code('S', nextval('supplier_code_seq'))"  # migration 0005
 
 
 class Supplier(Base):

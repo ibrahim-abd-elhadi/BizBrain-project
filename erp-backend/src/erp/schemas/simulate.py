@@ -2,11 +2,13 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from erp.ids import PRODUCT_ID_PATTERN
+
 
 class SimulateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    spike_product_id: str | None = Field(default=None, pattern=r"^P[0-9]{3}$")
+    spike_product_id: str | None = Field(default=None, pattern=PRODUCT_ID_PATTERN)
 
 
 class ProductBatch(BaseModel):
