@@ -48,7 +48,7 @@ This is the lighter DEPI version of the Business Brain project. The SaaS platfor
 | `erp-backend` | ERP modules and the Canonical API (Python / FastAPI) |
 | `brain-api` | Brain read APIs, chat agent, proposals, approval and execution (Python / FastAPI) |
 | `brain-worker` | The same Brain code with a different entry point. It runs the scheduled jobs in section 4.1 and the manual `brain-worker run <job>` command |
-| `postgres` | One PostgreSQL container holding two separate databases, `erp_db` and `brain_db` |
+| `postgres` | One PostgreSQL container holding two separate databases, `erp_db` and `brain_db`. Each database has its own login: the ERP's login can reach only `erp_db`, and the Brain's login only `brain_db` |
 | `frontend` | One React app with both the ERP screens and the Brain screens |
 
 ---
@@ -80,7 +80,7 @@ All three paths write to `erp_db`. The Brain sees them only by polling the Canon
 
 ## 3. Integration layer: the Canonical API
 
-This works as in the main plan, minus tenants and branches. The main plan's `contracts/` are reused, with the multi-tenant and multi-branch parts removed.
+This works as in the main plan, minus tenants and branches. The main plan's `contracts/` are reused, with the multi-tenant and multi-branch parts removed. Product and supplier IDs are readable strings (for example `P001`, `S001`) instead of UUIDs.
 
 | Endpoint | Used for |
 |---|---|
@@ -261,7 +261,7 @@ None of these were decided while scoping:
 - Main-plan rules this scoping didn't cover:
   - at most one live proposal per recommendation (D-30)
   - a fresh approval round after a failed execution (D-43)
-  - separate least-privilege database roles (D-45)
+  - separate least-privilege roles for `brain-api` and `brain-worker` inside `brain_db` (D-45)
 
 ## 9. Known limits
 
