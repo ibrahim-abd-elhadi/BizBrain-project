@@ -1,0 +1,400 @@
+{
+  "products": [
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P001",
+      "name": "Paracetamol 500 mg tablets",
+      "preferred_supplier_id": "S001",
+      "pack_multiple": 10,
+      "max_order_qty": 400,
+      "updated_at": "2026-11-17T18:26:23.027998Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P002",
+      "name": "Ibuprofen 400 mg tablets",
+      "preferred_supplier_id": "S001",
+      "pack_multiple": 10,
+      "max_order_qty": 300,
+      "updated_at": "2026-11-17T18:26:23.030420Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P003",
+      "name": "Amoxicillin 500 mg capsules",
+      "preferred_supplier_id": "S004",
+      "pack_multiple": 12,
+      "max_order_qty": 240,
+      "updated_at": "2026-11-17T18:26:23.033004Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P004",
+      "name": "Omeprazole 20 mg capsules",
+      "preferred_supplier_id": "S002",
+      "pack_multiple": 30,
+      "max_order_qty": 600,
+      "updated_at": "2026-11-17T18:26:23.034868Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P005",
+      "name": "Metformin 500 mg tablets",
+      "preferred_supplier_id": "S002",
+      "pack_multiple": 30,
+      "max_order_qty": 450,
+      "updated_at": "2026-11-17T18:26:23.036259Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P006",
+      "name": "Amlodipine 5 mg tablets",
+      "preferred_supplier_id": "S003",
+      "pack_multiple": 30,
+      "max_order_qty": 450,
+      "updated_at": "2026-11-17T18:26:23.037458Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P007",
+      "name": "Atorvastatin 20 mg tablets",
+      "preferred_supplier_id": "S003",
+      "pack_multiple": 30,
+      "max_order_qty": 360,
+      "updated_at": "2026-11-17T18:26:23.038784Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P008",
+      "name": "Cetirizine 10 mg tablets",
+      "preferred_supplier_id": "S001",
+      "pack_multiple": 10,
+      "max_order_qty": 250,
+      "updated_at": "2026-11-17T18:26:23.040938Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P009",
+      "name": "Salbutamol 100 mcg inhaler",
+      "preferred_supplier_id": "S004",
+      "pack_multiple": 1,
+      "max_order_qty": 40,
+      "updated_at": "2026-11-17T18:26:23.042246Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P010",
+      "name": "Loratadine 10 mg tablets",
+      "preferred_supplier_id": "S002",
+      "pack_multiple": 10,
+      "max_order_qty": 200,
+      "updated_at": "2026-11-17T18:26:23.043379Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P011",
+      "name": "Azithromycin 250 mg tablets",
+      "preferred_supplier_id": "S003",
+      "pack_multiple": 5,
+      "max_order_qty": 150,
+      "updated_at": "2026-11-17T18:26:23.044424Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P012",
+      "name": "Diclofenac 50 mg tablets",
+      "preferred_supplier_id": "S001",
+      "pack_multiple": 20,
+      "max_order_qty": 400,
+      "updated_at": "2026-11-17T18:26:23.045830Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P013",
+      "name": "Losartan 50 mg tablets",
+      "preferred_supplier_id": "S002",
+      "pack_multiple": 30,
+      "max_order_qty": 360,
+      "updated_at": "2026-11-17T18:26:23.047083Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P014",
+      "name": "Levothyroxine 100 mcg tablets",
+      "preferred_supplier_id": "S004",
+      "pack_multiple": 30,
+      "max_order_qty": 300,
+      "updated_at": "2026-11-17T18:26:23.048051Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P015",
+      "name": "Ciprofloxacin 500 mg tablets",
+      "preferred_supplier_id": "S003",
+      "pack_multiple": 10,
+      "max_order_qty": 250,
+      "updated_at": "2026-11-17T18:26:23.048920Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P016",
+      "name": "Vitamin C 1000 mg effervescent tablets",
+      "preferred_supplier_id": "S001",
+      "pack_multiple": 20,
+      "max_order_qty": 400,
+      "updated_at": "2026-11-17T18:26:23.049913Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P017",
+      "name": "Oral rehydration salts sachets",
+      "preferred_supplier_id": "S002",
+      "pack_multiple": 5,
+      "max_order_qty": 200,
+      "updated_at": "2026-11-17T18:26:23.050776Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P018",
+      "name": "Aspirin 75 mg tablets",
+      "preferred_supplier_id": "S003",
+      "pack_multiple": 30,
+      "max_order_qty": 600,
+      "updated_at": "2026-11-17T18:26:23.051906Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P019",
+      "name": "Pantoprazole 40 mg tablets",
+      "preferred_supplier_id": "S004",
+      "pack_multiple": 20,
+      "max_order_qty": 300,
+      "updated_at": "2026-11-17T18:26:23.053006Z"
+    },
+    {
+      "schema": "canonical.Product",
+      "version": "1.0",
+      "product_id": "P020",
+      "name": "Domperidone 10 mg tablets",
+      "preferred_supplier_id": "S002",
+      "pack_multiple": 12,
+      "max_order_qty": 300,
+      "updated_at": "2026-11-17T18:26:23.054087Z"
+    }
+  ],
+  "inventory": [
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P001",
+      "on_hand": 770,
+      "available": 770,
+      "updated_at": "2026-11-17T18:26:23.031628Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P002",
+      "on_hand": 480,
+      "available": 480,
+      "updated_at": "2026-11-17T18:26:23.034033Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P003",
+      "on_hand": 60,
+      "available": 60,
+      "updated_at": "2026-11-17T18:26:23.035625Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P004",
+      "on_hand": 525,
+      "available": 525,
+      "updated_at": "2026-11-17T18:26:23.036784Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P005",
+      "on_hand": 504,
+      "available": 504,
+      "updated_at": "2026-11-17T18:26:23.038201Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P006",
+      "on_hand": 352,
+      "available": 352,
+      "updated_at": "2026-11-17T18:26:23.039644Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P007",
+      "on_hand": 360,
+      "available": 360,
+      "updated_at": "2026-11-17T18:26:23.041630Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P008",
+      "on_hand": 275,
+      "available": 275,
+      "updated_at": "2026-11-17T18:26:23.042787Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P009",
+      "on_hand": 102,
+      "available": 102,
+      "updated_at": "2026-11-17T18:26:23.043877Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P010",
+      "on_hand": 195,
+      "available": 195,
+      "updated_at": "2026-11-17T18:26:23.044924Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P011",
+      "on_hand": 25,
+      "available": 25,
+      "updated_at": "2026-11-17T18:26:23.046481Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P012",
+      "on_hand": 450,
+      "available": 450,
+      "updated_at": "2026-11-17T18:26:23.047530Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P013",
+      "on_hand": 304,
+      "available": 304,
+      "updated_at": "2026-11-17T18:26:23.048433Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P014",
+      "on_hand": 160,
+      "available": 160,
+      "updated_at": "2026-11-17T18:26:23.049343Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P015",
+      "on_hand": 168,
+      "available": 168,
+      "updated_at": "2026-11-17T18:26:23.050293Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P016",
+      "on_hand": 450,
+      "available": 450,
+      "updated_at": "2026-11-17T18:26:23.051265Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P017",
+      "on_hand": 21,
+      "available": 21,
+      "updated_at": "2026-11-17T18:26:23.052440Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P018",
+      "on_hand": 288,
+      "available": 288,
+      "updated_at": "2026-11-17T18:26:23.053500Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P019",
+      "on_hand": 144,
+      "available": 144,
+      "updated_at": "2026-11-17T18:26:23.054600Z"
+    },
+    {
+      "schema": "canonical.InventoryItem",
+      "version": "1.0",
+      "product_id": "P020",
+      "on_hand": 72,
+      "available": 72,
+      "updated_at": "2026-11-17T18:26:23.055104Z"
+    }
+  ],
+  "suppliers": [
+    {
+      "schema": "canonical.Supplier",
+      "version": "1.0",
+      "supplier_id": "S001",
+      "name": "Alpha Pharma Supply",
+      "lead_time_days": 2,
+      "updated_at": "2026-11-17T18:26:23.021838Z"
+    },
+    {
+      "schema": "canonical.Supplier",
+      "version": "1.0",
+      "supplier_id": "S002",
+      "name": "Beta Medical Wholesale",
+      "lead_time_days": 3,
+      "updated_at": "2026-11-17T18:26:23.025016Z"
+    },
+    {
+      "schema": "canonical.Supplier",
+      "version": "1.0",
+      "supplier_id": "S003",
+      "name": "Gamma Drug Distribution",
+      "lead_time_days": 5,
+      "updated_at": "2026-11-17T18:26:23.025850Z"
+    },
+    {
+      "schema": "canonical.Supplier",
+      "version": "1.0",
+      "supplier_id": "S004",
+      "name": "Delta Health Trading",
+      "lead_time_days": 7,
+      "updated_at": "2026-11-17T18:26:23.026416Z"
+    }
+  ]
+}

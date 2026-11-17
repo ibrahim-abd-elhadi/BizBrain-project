@@ -2,15 +2,16 @@
 
 Adds a realistic batch to today's daily totals only, moves stock by the net units added, and never
 lets stock fall below 0. An optional spike pushes one product's net units for today to at least
-ceil(mean28 + z x sd28) of its last 28 closed days, capped by stock.
+ceil(mean28 + z x sd28) of its last 28 closed days (a no-sale day counting as 0), capped by
+stock.
 """
 
 import math
 import random
 import statistics
-from datetime import date
+from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from erp.clock import now_utc, today_cairo
@@ -53,18 +54,29 @@ class SpikeNeedsHistory(ErpError):
 def closed_history(
     session: Session, product_id: str, today: date, days: int = HISTORY_DAYS
 ) -> list[int]:
-    """Net units of the most recent `closed` days before today, oldest first."""
-    newest_first = session.scalars(
-        select(DailySales.net_units)
-        .where(
+    """Net units of the product's last `days` closed days before today, oldest first.
+
+    These are calendar days: a closed day with no sales row counts as 0 (Simulate Sales writes no
+    row for a product that sold nothing), exactly as the Brain counts it (feature 003, research
+    R-13). A product whose first sales row is fewer than `days` days ago gets only the days since
+    that row, so a young product still can't be spiked.
+    """
+    first = session.scalar(
+        select(func.min(DailySales.business_date)).where(DailySales.product_id == product_id)
+    )
+    if first is None or first >= today:
+        return []
+    start = max(first, today - timedelta(days=days))
+    rows = session.execute(
+        select(DailySales.business_date, DailySales.net_units).where(
             DailySales.product_id == product_id,
             DailySales.day_status == "closed",
+            DailySales.business_date >= start,
             DailySales.business_date < today,
         )
-        .order_by(DailySales.business_date.desc())
-        .limit(days)
     ).all()
-    return list(reversed(newest_first))
+    by_day = {day: net for day, net in rows}
+    return [by_day.get(start + timedelta(days=i), 0) for i in range((today - start).days)]
 
 
 def baseline(values: list[int]) -> float:

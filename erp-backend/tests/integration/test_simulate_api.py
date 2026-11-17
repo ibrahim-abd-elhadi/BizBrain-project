@@ -284,3 +284,113 @@ def test_simulate_needs_a_token(client: TestClient, manager: str) -> None:
     response = client.post(f"{BASE}/sales/simulate", json={})
     assert response.status_code == 401
     assert response.json()["code"] == "UNAUTHENTICATED"
+
+
+# ---- Feature 003 (T040): one zero-fill rule. "The product's last 28 closed days" (feature 001
+# spec) are the 28 calendar days before today; a closed day with no sales row counts as 0, exactly
+# as the Brain counts it, so an ERP spike always reaches z = 4 in the Brain.
+
+TODAY_003 = date(2026, 11, 18)
+NO_SALE_DAYS = (2, 5, 9, 14, 20)  # days back from today with their P020 rows removed
+
+
+def _drop_p020_rows(db: Session) -> None:
+    from datetime import timedelta
+
+    from sqlalchemy import delete
+
+    for back in NO_SALE_DAYS:
+        db.execute(
+            delete(DailySales).where(
+                DailySales.product_id == "P020",
+                DailySales.business_date == TODAY_003 - timedelta(days=back),
+            )
+        )
+    db.commit()
+
+
+def _zero_filled_window(db: Session, product_id: str) -> list[int]:
+    from datetime import timedelta
+
+    db.expire_all()
+    by_day = {
+        r.business_date: r.units_sold - r.units_returned
+        for r in db.scalars(select(DailySales).where(DailySales.product_id == product_id))
+    }
+    return [by_day.get(TODAY_003 - timedelta(days=back), 0) for back in range(28, 0, -1)]
+
+
+def test_closed_history_counts_no_sale_days_as_zero(db: Session, at_cairo, seed) -> None:
+    from erp.services.simulate import closed_history
+
+    with at_cairo(NOW):
+        seed()
+        _drop_p020_rows(db)
+        history = closed_history(db, "P020", TODAY_003)
+    assert len(history) == 28
+    assert history == _zero_filled_window(db, "P020")
+    assert history.count(0) >= len(NO_SALE_DAYS)
+
+
+def test_closed_history_of_a_young_product_covers_only_its_days(db: Session, at_cairo, seed) -> None:
+    from datetime import timedelta
+
+    from sqlalchemy import delete
+
+    from erp.services.simulate import closed_history
+
+    with at_cairo(NOW):
+        seed()
+        db.execute(
+            delete(DailySales).where(
+                DailySales.product_id == "P019",
+                DailySales.business_date < TODAY_003 - timedelta(days=20),
+            )
+        )
+        db.commit()
+        history = closed_history(db, "P019", TODAY_003)
+    assert len(history) == 20
+
+
+def test_a_slow_sellers_spike_uses_the_zero_filled_window(
+    client: TestClient, db: Session, at_cairo, seed, login
+) -> None:
+    import math
+    import statistics
+
+    with at_cairo(NOW):
+        seed()
+        _drop_p020_rows(db)
+        _set_stock(db, "P020", 100_000)
+        window = _zero_filled_window(db, "P020")
+        result = client.post(
+            f"{BASE}/sales/simulate", json={"spike_product_id": "P020"}, headers=login()
+        ).json()
+    sd = statistics.stdev(window) or 1
+    expected = math.ceil(statistics.mean(window) + 4 * sd)
+    assert result["spike"]["target_net_units"] == expected
+    assert result["spike"]["achieved_net_units"] >= expected
+    # So the Brain, counting no-sale days as 0 too, sees z >= 4.
+    assert (result["spike"]["achieved_net_units"] - statistics.mean(window)) / sd >= 4
+
+
+def test_the_simulate_baseline_uses_the_same_window(
+    client: TestClient, db: Session, at_cairo, seed, login, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import statistics
+
+    lambdas: list[float] = []
+
+    def record(rng, lam):  # noqa: ANN001
+        lambdas.append(lam)
+        return 0
+
+    with at_cairo(NOW):
+        seed()
+        _drop_p020_rows(db)
+        window = _zero_filled_window(db, "P020")
+        monkeypatch.setattr("erp.services.simulate.poisson", record)
+        assert client.post(f"{BASE}/sales/simulate", json={}, headers=login()).status_code == 200
+    fraction = get_settings().erp_simulate_batch_fraction
+    # Products are simulated in ID order, so P020 (the 20th) is the last draw.
+    assert lambdas[-1] == pytest.approx(max(1.0, statistics.mean(window)) * fraction)

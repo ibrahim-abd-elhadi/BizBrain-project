@@ -1,1 +1,1 @@
-"""Placeholder; filled by a later Brain feature."""
+"""brain-api: read endpoints for the Brain screens (feature 003)."""

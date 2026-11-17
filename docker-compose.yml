@@ -1,5 +1,5 @@
 # BizBrain: one machine, five services (README Section 1).
-# brain-api and brain-worker are placeholders behind the "brain" profile until a Brain feature fills them in.
+# brain-worker runs the Brain's Cairo-time jobs; brain-api serves the Brain screens (feature 003).
 
 services:
   postgres:
@@ -13,6 +13,9 @@ services:
       ERP_DB_PASSWORD: ${ERP_DB_PASSWORD}
       BRAIN_DB_USER: ${BRAIN_DB_USER}
       BRAIN_DB_PASSWORD: ${BRAIN_DB_PASSWORD}
+      # brain-api's read-only login inside brain_db (02-brain-api-role.sh, feature 003 R-16).
+      BRAIN_API_DB_USER: ${BRAIN_API_DB_USER}
+      BRAIN_API_DB_PASSWORD: ${BRAIN_API_DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -50,17 +53,45 @@ services:
     build: ./frontend
     depends_on:
       - erp-backend
+      - brain-api
     ports:
       - "${FRONTEND_PORT:-8080}:80"
 
-  # Placeholders: a later Brain feature adds the Dockerfile and the command for each.
-  brain-api:
-    build: ./brain
-    profiles: ["brain"]
-
+  # The Brain: one image, two commands (README Section 1). It reaches the ERP only through the
+  # Canonical API with its service token, and connects only to brain_db (constitution II).
   brain-worker:
     build: ./brain
-    profiles: ["brain"]
+    command: ["serve"]
+    environment:
+      BRAIN_DATABASE_URL: postgresql+psycopg://${BRAIN_DB_USER}:${BRAIN_DB_PASSWORD}@postgres:5432/brain_db
+      BRAIN_API_DB_USER: ${BRAIN_API_DB_USER}
+      BRAIN_ERP_BASE_URL: http://erp-backend:8000
+      BRAIN_ERP_SERVICE_TOKEN_FILE: /run/secrets/brain_service_token
+    volumes:
+      - ./secrets/brain_service_token:/run/secrets/brain_service_token:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      erp-backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "brain-worker", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  brain-api:
+    build: ./brain
+    command: ["api"]
+    environment:
+      BRAIN_API_DATABASE_URL: postgresql+psycopg://${BRAIN_API_DB_USER}:${BRAIN_API_DB_PASSWORD}@postgres:5432/brain_db
+      BRAIN_ERP_JWT_PUBLIC_KEY_FILE: /run/erp-keys/erp_jwt_ed25519.pub.pem
+    volumes:
+      - ./secrets/erp_jwt_ed25519.pub.pem:/run/erp-keys/erp_jwt_ed25519.pub.pem:ro
+    depends_on:
+      brain-worker:
+        condition: service_healthy
 
 volumes:
   pgdata:

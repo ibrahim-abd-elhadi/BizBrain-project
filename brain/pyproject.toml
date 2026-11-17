@@ -4,10 +4,52 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bizbrain-brain"
-version = "0.0.0"
-description = "Placeholder for the single Brain codebase (brain-api and brain-worker share it)."
+version = "0.1.0"
+description = "BizBrain Brain: brain-api and brain-worker share this codebase (feature 003). All data is synthetic."
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "fastapi==0.163.1",
+    "uvicorn[standard]==0.54.0",
+    "pydantic==2.14.3",
+    "pydantic-settings==2.16.3",
+    "SQLAlchemy==2.1.9",
+    "alembic==1.20.1",
+    "psycopg[binary]==3.3.9",
+    "PyJWT[crypto]==2.15.1",
+    "cryptography==50.0.2",
+    "httpx==0.28.1",
+    "tzdata==2026.6",
+    "lightgbm==4.7.0",
+    "numpy==2.5.5",
+    "scipy==1.18.1",
+    "APScheduler==3.11.3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==9.2.0",
+    "testcontainers[postgres]==4.15.0",
+    "time-machine==3.6.0",
+    "jsonschema==4.26.0",
+    "PyYAML==6.0.3",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.5",
+]
+
+[project.scripts]
+brain-worker = "brain.jobs.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint.isort]
+# tests/ is on sys.path (it holds conftest.py), so its helper modules import as local ones.
+known-local-folder = ["fakes", "series", "canonical_schemas"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: performance checks"]

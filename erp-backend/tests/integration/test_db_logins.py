@@ -27,6 +27,9 @@ def server() -> Iterator[PostgresContainer]:
         .with_env("ERP_DB_PASSWORD", ERP_PASSWORD)
         .with_env("BRAIN_DB_USER", BRAIN_USER)
         .with_env("BRAIN_DB_PASSWORD", BRAIN_PASSWORD)
+        # 02-brain-api-role.sh (feature 003) runs here too and needs its login.
+        .with_env("BRAIN_API_DB_USER", "brain_api_t")
+        .with_env("BRAIN_API_DB_PASSWORD", "brain_api_pw")
     )
     with container:
         yield container
