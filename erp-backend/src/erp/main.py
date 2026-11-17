@@ -1,7 +1,12 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import APIRouter, FastAPI
 
-from erp.api import auth, inventory, products, suppliers
+from erp.api import auth, inventory, products, purchase_orders, sales, suppliers
+from erp.db import get_sessionmaker
 from erp.errors import register_error_handlers
+from erp.services.day_close import close_past_days
 
 # The ERP's own API. /api/v1/canonical/* belongs to feature 002 and is not mounted here.
 api = APIRouter(prefix="/api/v1/erp")
@@ -9,7 +14,19 @@ api.include_router(auth.router)
 api.include_router(suppliers.router)
 api.include_router(products.router)
 api.include_router(inventory.router)
+api.include_router(sales.router)
+api.include_router(purchase_orders.router)
 
-app = FastAPI(title="BizBrain ERP")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Days that ended while the ERP was down are closed on start-up (research R-14).
+    with get_sessionmaker()() as session:
+        close_past_days(session)
+        session.commit()
+    yield
+
+
+app = FastAPI(title="BizBrain ERP", lifespan=lifespan)
 register_error_handlers(app)
 app.include_router(api)

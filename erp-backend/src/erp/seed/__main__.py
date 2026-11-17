@@ -14,12 +14,13 @@ from erp.config import Settings, get_settings
 from erp.db import get_sessionmaker
 from erp.models import Base, ManagerAccount
 from erp.seed.catalog import seed_catalog
+from erp.seed.history import seed_history
 from erp.seed.manager import SeedConfigError, seed_manager
 
 SeedStep = Callable[[Session, Settings], None]
 
-# Ordered seed steps: manager, then the catalog. The sales history is added by a later task.
-STEPS: list[SeedStep] = [seed_manager, seed_catalog]
+# Ordered seed steps: manager, catalog (products, suppliers, starting stock), 90 days of history.
+STEPS: list[SeedStep] = [seed_manager, seed_catalog, seed_history]
 
 # Standalone sequences are not restarted by TRUNCATE ... RESTART IDENTITY.
 CODE_SEQUENCES = ("product_code_seq", "supplier_code_seq")

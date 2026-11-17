@@ -120,3 +120,60 @@ def at_cairo() -> Callable[[str], time_machine.travel]:
         return time_machine.travel(moment, tick=False)
 
     return _at
+
+
+@pytest.fixture
+def login(client: TestClient) -> Callable[[], dict[str, str]]:
+    """login() signs in as the seeded or inserted manager at the *current* (possibly frozen) time.
+
+    Use it inside an `at_cairo` block: a token issued at real time would be rejected as issued in
+    the future (or as expired) once the clock is frozen somewhere else.
+    """
+
+    def _login() -> dict[str, str]:
+        response = client.post(
+            "/api/v1/erp/auth/login", json={"username": "manager", "password": "correct-horse"}
+        )
+        assert response.status_code == 200, response.text
+        return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+    return _login
+
+
+@pytest.fixture
+def catalog(db: Session) -> None:
+    """One supplier (S001) and two products (P001, P002), each with 100 in stock."""
+    from erp.models import Product, Stock, Supplier
+
+    supplier = Supplier(name="Nile Pharma", lead_time_days=3)
+    db.add(supplier)
+    db.flush()
+    for name in ("Paracetamol 500 mg", "Ibuprofen 400 mg"):
+        product = Product(
+            name=name,
+            preferred_supplier_id=supplier.supplier_id,
+            pack_multiple=10,
+            max_order_qty=400,
+        )
+        db.add(product)
+        db.flush()
+        db.add(Stock(product_id=product.product_id, on_hand=100))
+    db.commit()
+
+
+@pytest.fixture
+def seed(db: Session) -> Callable[[], None]:
+    """seed() runs the real seed steps (manager, catalog, history) at the current clock.
+
+    The manager it creates is `manager` / `correct-horse` (from the test environment). Call it
+    inside an `at_cairo` block.
+    """
+
+    def _run() -> None:
+        from erp.config import get_settings
+        from erp.seed.__main__ import run_seed
+
+        run_seed(db, get_settings(), reset=True)
+        db.commit()
+
+    return _run
