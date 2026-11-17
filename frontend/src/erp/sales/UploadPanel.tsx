@@ -1,7 +1,10 @@
-import { type FormEvent, useState } from "react";
+import { UploadOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Space, Table, Tag, Typography, Upload } from "antd";
+import { useState } from "react";
 import { apiFetch } from "../../api/client";
 import type { UploadResult } from "../../api/types";
 import { messageOf } from "../../api/useApiData";
+import { ErrorAlert } from "../../components/ErrorAlert";
 
 interface Props {
   /** Called after an upload so the sales table can refresh. */
@@ -16,8 +19,7 @@ export function UploadPanel({ onDone }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function submit() {
     if (file === null) return;
     setBusy(true);
     setError(null);
@@ -36,68 +38,80 @@ export function UploadPanel({ onDone }: Props) {
     }
   }
 
+  const refusedCount = result?.refused.length ?? 0;
+
   return (
-    <section aria-label="Upload CSV">
-      <h2>Upload CSV</h2>
-      <p className="muted">
-        Columns: business_date, product_id, units_sold, units_returned. Only today&apos;s date is
-        accepted, and each row replaces that product&apos;s total for today.
-      </p>
-      <form className="inline" onSubmit={(e) => void submit(e)}>
-        <label>
-          CSV file
-          <input
-            type="file"
+    <section aria-label="Upload CSV" className="panel-card">
+      <Card title="Upload CSV" className="panel-card">
+        <Typography.Paragraph type="secondary">
+          Columns: business_date, product_id, units_sold, units_returned. Only today&apos;s date is
+          accepted, and each row replaces that product&apos;s total for today.
+        </Typography.Paragraph>
+        <Space wrap align="start">
+          <Upload
             accept=".csv"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
-        <button type="submit" disabled={file === null || busy}>
-          Upload
-        </button>
-      </form>
+            maxCount={1}
+            beforeUpload={(chosen) => {
+              setFile(chosen);
+              return false; // keep the file here; it is sent only when Upload is pressed
+            }}
+            onRemove={() => setFile(null)}
+            fileList={file ? [{ uid: "chosen", name: file.name, status: "done" }] : []}
+          >
+            <Button icon={<UploadOutlined aria-hidden />}>Choose CSV file</Button>
+          </Upload>
+          <Button type="primary" disabled={file === null} loading={busy} onClick={() => void submit()}>
+            Upload
+          </Button>
+        </Space>
 
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-
-      {result && (
-        <div aria-live="polite">
-          <p>
-            Accepted: {result.accepted.length} · Refused: {result.refused.length} · Overridden:{" "}
-            {result.overridden.length}
-          </p>
-          {result.refused.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Row</th>
-                  <th>Code</th>
-                  <th>Detail</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.refused.map((r) => (
-                  <tr key={r.row}>
-                    <td>{r.row}</td>
-                    <td>{r.code}</td>
-                    <td>{r.detail}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          {result.overridden.length > 0 && (
-            <ul>
-              {result.overridden.map((o) => (
-                <li key={o.row}>{`row ${o.row} overridden by row ${o.overridden_by_row}`}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+        {(error || result) && (
+          <div className="panel-result" aria-live="polite">
+            <ErrorAlert error={error} />
+            {result && (
+              <>
+                <Alert
+                  type={refusedCount > 0 ? "warning" : "success"}
+                  showIcon
+                  title={`Accepted: ${result.accepted.length} · Refused: ${refusedCount} · Overridden: ${result.overridden.length}`}
+                />
+                {refusedCount > 0 && (
+                  <Table
+                    size="small"
+                    rowKey="row"
+                    title={() => "Refused rows"}
+                    dataSource={result.refused}
+                    pagination={refusedCount > 5 ? { pageSize: 5, showSizeChanger: false } : false}
+                    columns={[
+                      { title: "Row", dataIndex: "row", width: 64 },
+                      {
+                        title: "Code",
+                        dataIndex: "code",
+                        render: (code: string) => <Tag color="red">{code}</Tag>,
+                      },
+                      { title: "Detail", dataIndex: "detail" },
+                    ]}
+                  />
+                )}
+                {result.overridden.length > 0 && (
+                  <Alert
+                    type="info"
+                    showIcon
+                    title="Overridden rows (the last row for a product and date wins)"
+                    description={
+                      <ul>
+                        {result.overridden.map((o) => (
+                          <li key={o.row}>{`row ${o.row} overridden by row ${o.overridden_by_row}`}</li>
+                        ))}
+                      </ul>
+                    }
+                  />
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </Card>
     </section>
   );
 }

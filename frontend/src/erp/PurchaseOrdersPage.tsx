@@ -1,7 +1,16 @@
+import { CheckOutlined } from "@ant-design/icons";
+import { Button, Card, Table } from "antd";
+import type { TableColumnsType } from "antd";
 import { useMemo, useState } from "react";
 import { apiFetch } from "../api/client";
 import type { Product, PurchaseOrder } from "../api/types";
 import { messageOf, useApiData } from "../api/useApiData";
+import { ErrorAlert } from "../components/ErrorAlert";
+import { PageHeader } from "../components/PageHeader";
+import { StatusTag } from "../components/StatusTag";
+import { byNumber, pagination } from "../components/table";
+
+const when = (value: string | null) => (value ? new Date(value).toLocaleString() : "—");
 
 // The manager can only confirm a draft: there is no create, edit or delete (FR-017, FR-022).
 // Confirming treats the ordered quantities as received, so stock goes up (FR-024).
@@ -29,66 +38,81 @@ export function PurchaseOrdersPage() {
     }
   }
 
+  const columns: TableColumnsType<PurchaseOrder> = [
+    { title: "Order", dataIndex: "po_id", width: 90, sorter: byNumber((o) => o.po_id) },
+    {
+      title: "Status",
+      dataIndex: "status",
+      width: 120,
+      render: (_, o) => <StatusTag status={o.status} />,
+      filters: [
+        { text: "draft", value: "draft" },
+        { text: "confirmed", value: "confirmed" },
+      ],
+      onFilter: (value, o) => o.status === value,
+    },
+    {
+      title: "Created",
+      dataIndex: "created_at",
+      render: (value: string) => when(value),
+      sorter: byNumber((o) => Date.parse(o.created_at)),
+    },
+    {
+      title: "Confirmed",
+      dataIndex: "confirmed_at",
+      render: (value: string | null) => when(value),
+    },
+    {
+      title: "Lines",
+      key: "lines",
+      render: (_, o) => (
+        <ul className="lines">
+          {o.lines.map((line) => (
+            <li key={line.product_id}>
+              {line.product_id}
+              {names[line.product_id] ? ` ${names[line.product_id]}` : ""} × {line.quantity}
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 130,
+      render: (_, o) =>
+        o.status === "draft" ? (
+          <Button
+            type="primary"
+            size="small"
+            icon={<CheckOutlined aria-hidden />}
+            aria-label={`Confirm purchase order ${o.po_id}`}
+            loading={confirming === o.po_id}
+            onClick={() => void confirm(o.po_id)}
+          >
+            Confirm
+          </Button>
+        ) : null,
+    },
+  ];
+
   return (
-    <section>
-      <h1>Purchase orders</h1>
-
-      {(actionError ?? error) && (
-        <p role="alert" className="error">
-          {actionError ?? error}
-        </p>
-      )}
-      {loading && <p className="muted">Loading…</p>}
-      {orders && orders.length === 0 && <p className="muted">No purchase orders yet.</p>}
-
-      {orders && orders.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Confirmed</th>
-              <th>Lines</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.po_id}>
-                <td>{order.po_id}</td>
-                <td>
-                  <span className={`badge ${order.status}`}>{order.status}</span>
-                </td>
-                <td>{new Date(order.created_at).toLocaleString()}</td>
-                <td>{order.confirmed_at ? new Date(order.confirmed_at).toLocaleString() : "—"}</td>
-                <td>
-                  <ul>
-                    {order.lines.map((line) => (
-                      <li key={line.product_id}>
-                        {line.product_id}
-                        {names[line.product_id] ? ` ${names[line.product_id]}` : ""} × {line.quantity}
-                      </li>
-                    ))}
-                  </ul>
-                </td>
-                <td>
-                  {order.status === "draft" && (
-                    <button
-                      type="button"
-                      aria-label={`Confirm purchase order ${order.po_id}`}
-                      disabled={confirming === order.po_id}
-                      onClick={() => void confirm(order.po_id)}
-                    >
-                      Confirm
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
+    <div className="page">
+      <PageHeader
+        title="Purchase orders"
+        subtitle="Confirming a draft treats its quantities as received and adds them to stock."
+      />
+      <ErrorAlert error={actionError ?? error} />
+      <Card>
+        <Table<PurchaseOrder>
+          rowKey="po_id"
+          columns={columns}
+          dataSource={orders ?? []}
+          loading={loading}
+          pagination={pagination}
+          locale={{ emptyText: "No purchase orders yet." }}
+        />
+      </Card>
+    </div>
   );
 }

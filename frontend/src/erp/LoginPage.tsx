@@ -1,16 +1,20 @@
-import { type FormEvent, useState } from "react";
+import { Button, Card, Form, Input, Typography } from "antd";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ApiError, login } from "../api/client";
+import { ErrorAlert } from "../components/ErrorAlert";
+
+interface Credentials {
+  username: string;
+  password: string;
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function onFinish({ username, password }: Credentials) {
     setBusy(true);
     setError(null);
     try {
@@ -24,35 +28,41 @@ export function LoginPage() {
   }
 
   return (
-    <form className="inline" onSubmit={onSubmit} aria-label="Sign in">
-      <h1>Sign in</h1>
-      <label>
-        Username
-        <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
-          required
-        />
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          required
-        />
-      </label>
-      <button type="submit" disabled={busy}>
-        Sign in
-      </button>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-    </form>
+    <div className="login-page">
+      <Card className="login-card">
+        <Typography.Title level={1}>Sign in</Typography.Title>
+        <Typography.Paragraph type="secondary">Pharmacy manager account</Typography.Paragraph>
+        <Form<Credentials>
+          name="sign-in"
+          layout="vertical"
+          requiredMark={false}
+          onFinish={(values) => void onFinish(values)}
+          aria-label="Sign in"
+        >
+          <Form.Item
+            label="Username"
+            name="username"
+            rules={[{ required: true, message: "Enter your username" }]}
+          >
+            <Input autoComplete="username" autoFocus />
+          </Form.Item>
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[{ required: true, message: "Enter your password" }]}
+          >
+            <Input.Password autoComplete="current-password" />
+          </Form.Item>
+          {error && (
+            <div className="form-error">
+              <ErrorAlert error={error} />
+            </div>
+          )}
+          <Button type="primary" htmlType="submit" block loading={busy}>
+            Sign in
+          </Button>
+        </Form>
+      </Card>
+    </div>
   );
 }

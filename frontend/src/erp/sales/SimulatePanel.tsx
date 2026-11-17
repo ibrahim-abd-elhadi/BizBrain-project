@@ -1,7 +1,10 @@
+import { ThunderboltOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Form, Select, Table, Tag, Typography } from "antd";
 import { useState } from "react";
 import { apiFetch } from "../../api/client";
 import type { Product, SimulateResult } from "../../api/types";
 import { messageOf } from "../../api/useApiData";
+import { ErrorAlert } from "../../components/ErrorAlert";
 
 interface Props {
   products: Product[];
@@ -19,7 +22,7 @@ export function spikeMessage(spike: NonNullable<SimulateResult["spike"]>): strin
 
 // Runs the ERP's own Simulate Sales: it adds to today's totals. It is not a Brain job.
 export function SimulatePanel({ products, onDone }: Props) {
-  const [spikeId, setSpikeId] = useState("");
+  const [spikeId, setSpikeId] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulateResult | null>(null);
@@ -42,54 +45,92 @@ export function SimulatePanel({ products, onDone }: Props) {
     }
   }
 
+  const changed = result?.products.length ?? 0;
+
   return (
-    <section aria-label="Simulate Sales">
-      <h2>Simulate Sales</h2>
-      <p className="muted">Adds a batch of sales to today&apos;s totals and lowers stock to match.</p>
-      <div className="inline">
-        <label>
-          Spike product (optional)
-          <select value={spikeId} onChange={(e) => setSpikeId(e.target.value)}>
-            <option value="">No spike</option>
-            {products.map((p) => (
-              <option key={p.product_id} value={p.product_id}>
-                {p.name} ({p.product_id})
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" disabled={busy} onClick={() => void run()}>
-          Simulate Sales
-        </button>
-      </div>
+    <section aria-label="Simulate Sales" className="panel-card">
+      <Card title="Simulate Sales" className="panel-card">
+        <Typography.Paragraph type="secondary">
+          Adds a batch of sales to today&apos;s totals and lowers stock to match.
+        </Typography.Paragraph>
+        <Form layout="vertical">
+          <Form.Item label="Spike product (optional)" htmlFor="spike-product">
+            <Select
+              id="spike-product"
+              allowClear
+              showSearch={{ optionFilterProp: "label" }}
+              placeholder="No spike"
+              value={spikeId}
+              onChange={(value?: string) => setSpikeId(value)}
+              options={products.map((p) => ({
+                value: p.product_id,
+                label: `${p.name} (${p.product_id})`,
+              }))}
+            />
+          </Form.Item>
+          <Button
+            type="primary"
+            icon={<ThunderboltOutlined aria-hidden />}
+            loading={busy}
+            onClick={() => void run()}
+          >
+            Simulate Sales
+          </Button>
+        </Form>
 
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-
-      {result && (
-        <div aria-live="polite">
-          <p>
-            Added to {result.business_date}:{" "}
-            {result.products.length === 0 ? "nothing (no stock to sell)" : `${result.products.length} product(s)`}
-          </p>
-          {result.spike && (
-            <p className={result.spike.capped_by_stock ? "note" : undefined}>{spikeMessage(result.spike)}</p>
-          )}
-          {result.products.length > 0 && (
-            <ul>
-              {result.products.map((p) => (
-                <li key={p.product_id}>
-                  {p.product_id}: +{p.units_sold_added} sold, +{p.units_returned_added} returned
-                  {p.capped_by_stock ? " (limited by stock)" : ""}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+        {(error || result) && (
+          <div className="panel-result" aria-live="polite">
+            <ErrorAlert error={error} />
+            {result && (
+              <>
+                <Alert
+                  type={changed > 0 ? "success" : "info"}
+                  showIcon
+                  title={`Added to ${result.business_date}: ${
+                    changed === 0 ? "nothing (no stock to sell)" : `${changed} product(s)`
+                  }`}
+                />
+                {result.spike && (
+                  <Alert
+                    type={result.spike.capped_by_stock ? "warning" : "success"}
+                    showIcon
+                    title={spikeMessage(result.spike)}
+                  />
+                )}
+                {changed > 0 && (
+                  <Table
+                    size="small"
+                    rowKey="product_id"
+                    dataSource={result.products}
+                    pagination={changed > 5 ? { pageSize: 5, showSizeChanger: false } : false}
+                    columns={[
+                      { title: "Product", dataIndex: "product_id" },
+                      {
+                        title: "Sold",
+                        dataIndex: "units_sold_added",
+                        align: "end",
+                        render: (n: number) => `+${n}`,
+                      },
+                      {
+                        title: "Returned",
+                        dataIndex: "units_returned_added",
+                        align: "end",
+                        render: (n: number) => `+${n}`,
+                      },
+                      {
+                        title: "Note",
+                        key: "note",
+                        render: (_, p) =>
+                          p.capped_by_stock ? <Tag color="orange">limited by stock</Tag> : null,
+                      },
+                    ]}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </Card>
     </section>
   );
 }

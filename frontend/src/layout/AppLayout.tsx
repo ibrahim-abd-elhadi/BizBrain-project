@@ -1,20 +1,53 @@
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
-import { isSignedIn, logout } from "../api/client";
+import {
+  DatabaseOutlined,
+  FileTextOutlined,
+  LineChartOutlined,
+  LogoutOutlined,
+  MedicineBoxOutlined,
+  ShopOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import { Button, Layout, Menu, Space, Tag, Typography } from "antd";
+import { useEffect, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
+import { apiFetch, isSignedIn, logout } from "../api/client";
 import "./app.css";
 
 const LINKS = [
-  ["/products", "Products"],
-  ["/suppliers", "Suppliers"],
-  ["/inventory", "Inventory"],
-  ["/sales", "Sales"],
-  ["/purchase-orders", "Purchase orders"],
-] as const;
+  { to: "/products", label: "Products", icon: <MedicineBoxOutlined aria-hidden /> },
+  { to: "/suppliers", label: "Suppliers", icon: <ShopOutlined aria-hidden /> },
+  { to: "/inventory", label: "Inventory", icon: <DatabaseOutlined aria-hidden /> },
+  { to: "/sales", label: "Sales", icon: <LineChartOutlined aria-hidden /> },
+  { to: "/purchase-orders", label: "Purchase orders", icon: <FileTextOutlined aria-hidden /> },
+];
 
-/** Wraps every route, login included, so the "Synthetic data" banner is on every screen (FR-027). */
+/** The signed-in manager's username, from the existing GET /auth/me. */
+function useCurrentUser(signedIn: boolean): string | null {
+  const [username, setUsername] = useState<string | null>(null);
+  useEffect(() => {
+    if (!signedIn) return;
+    let cancelled = false;
+    apiFetch<{ username: string }>("/auth/me")
+      .then((me) => {
+        if (!cancelled) setUsername(me.username);
+      })
+      .catch(() => {
+        // A 401 already sends the manager to /login (api/client.ts); nothing else to show.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+  return signedIn ? username : null;
+}
+
+/** Wraps every route, login included, so the "Synthetic data" tag is on every screen (FR-027). */
 export function AppLayout() {
   const navigate = useNavigate();
-  useLocation(); // re-render on navigation so the menu follows the sign-in state
+  const { pathname } = useLocation(); // re-renders on navigation, so the shell follows sign-in
   const signedIn = isSignedIn();
+  const username = useCurrentUser(signedIn);
+  const current = LINKS.find((link) => pathname.startsWith(link.to))?.to;
 
   function signOut() {
     logout();
@@ -22,28 +55,52 @@ export function AppLayout() {
   }
 
   return (
-    <div className="app">
-      <div role="note" data-testid="synthetic-banner" className="synthetic-banner">
-        Synthetic data
-      </div>
-      <header className="app-header">
-        <strong>BizBrain ERP</strong>
+    <Layout className="app">
+      <Layout.Header className="app-header">
+        <div className="brand">
+          <span className="brand-mark" aria-hidden>
+            B
+          </span>
+          <Typography.Text strong className="brand-name">
+            BizBrain ERP
+          </Typography.Text>
+        </div>
+        <Tag color="gold" role="note" data-testid="synthetic-banner" className="synthetic-tag">
+          Synthetic data
+        </Tag>
+        <div className="header-spacer" />
         {signedIn && (
-          <nav aria-label="Main">
-            {LINKS.map(([to, label]) => (
-              <NavLink key={to} to={to}>
-                {label}
-              </NavLink>
-            ))}
-            <button type="button" onClick={signOut}>
+          <Space size="middle">
+            <span className="header-user">
+              <UserOutlined aria-hidden />
+              <span data-testid="signed-in-user">{username ?? "…"}</span>
+            </span>
+            <Button icon={<LogoutOutlined aria-hidden />} onClick={signOut}>
               Sign out
-            </button>
-          </nav>
+            </Button>
+          </Space>
         )}
-      </header>
-      <main>
-        <Outlet />
-      </main>
-    </div>
+      </Layout.Header>
+      <Layout>
+        {signedIn && (
+          <Layout.Sider width={220} theme="light" className="app-sider">
+            <nav aria-label="Main">
+              <Menu
+                mode="inline"
+                selectedKeys={current ? [current] : []}
+                items={LINKS.map((link) => ({
+                  key: link.to,
+                  icon: link.icon,
+                  label: <Link to={link.to}>{link.label}</Link>,
+                }))}
+              />
+            </nav>
+          </Layout.Sider>
+        )}
+        <Layout.Content className="app-content">
+          <Outlet />
+        </Layout.Content>
+      </Layout>
+    </Layout>
   );
 }

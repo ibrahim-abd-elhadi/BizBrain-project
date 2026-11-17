@@ -12,5 +12,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["src/test/setup.ts"],
+    // Ant Design components (tables, modals, selects) are heavier to render in jsdom.
+    testTimeout: 20000,
   },
 });

@@ -1,143 +1,170 @@
-import { type FormEvent, useState } from "react";
+import { EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { Button, Card, Form, Input, InputNumber, Modal, Table } from "antd";
+import type { TableColumnsType } from "antd";
+import { useState } from "react";
 import { apiFetch } from "../api/client";
 import type { Supplier } from "../api/types";
 import { messageOf, useApiData } from "../api/useApiData";
+import { ErrorAlert } from "../components/ErrorAlert";
+import { PageHeader } from "../components/PageHeader";
+import { byNumber, byText, pagination } from "../components/table";
 
-// There is no delete control anywhere: nothing in the ERP is ever deleted (FR-022).
-export function SuppliersPage() {
-  const { data: suppliers, error, loading, reload } = useApiData<Supplier[]>("/suppliers");
-  const [actionError, setActionError] = useState<string | null>(null);
+interface SupplierValues {
+  name: string;
+  lead_time_days: number;
+}
 
-  const [newName, setNewName] = useState("");
-  const [newLead, setNewLead] = useState("3");
+type Editing = { mode: "add" } | { mode: "edit"; supplier: Supplier } | null;
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editLead, setEditLead] = useState("");
+interface ModalProps {
+  editing: Exclude<Editing, null>;
+  onClose: () => void;
+  onSaved: () => void;
+}
 
-  async function add(event: FormEvent) {
-    event.preventDefault();
-    setActionError(null);
+/** "Add supplier" and "Edit" share one modal form; the requests are the same as before. */
+function SupplierModal({ editing, onClose, onSaved }: ModalProps) {
+  const [form] = Form.useForm<SupplierValues>();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const adding = editing.mode === "add";
+
+  async function save(values: SupplierValues) {
+    setSaving(true);
+    setError(null);
     try {
-      await apiFetch<Supplier>("/suppliers", {
-        method: "POST",
-        body: { name: newName, lead_time_days: Number(newLead) },
-      });
-      setNewName("");
-      reload();
+      if (editing.mode === "add") {
+        await apiFetch<Supplier>("/suppliers", { method: "POST", body: { ...values } });
+      } else {
+        await apiFetch<Supplier>(`/suppliers/${editing.supplier.supplier_id}`, {
+          method: "PATCH",
+          body: { ...values },
+        });
+      }
+      onSaved();
     } catch (caught) {
-      setActionError(messageOf(caught));
-    }
-  }
-
-  function startEdit(supplier: Supplier) {
-    setEditingId(supplier.supplier_id);
-    setEditName(supplier.name);
-    setEditLead(String(supplier.lead_time_days));
-    setActionError(null);
-  }
-
-  async function save(supplierId: string) {
-    setActionError(null);
-    try {
-      await apiFetch<Supplier>(`/suppliers/${supplierId}`, {
-        method: "PATCH",
-        body: { name: editName, lead_time_days: Number(editLead) },
-      });
-      setEditingId(null);
-      reload();
-    } catch (caught) {
-      setActionError(messageOf(caught));
+      setError(messageOf(caught));
+      setSaving(false);
     }
   }
 
   return (
-    <section>
-      <h1>Suppliers</h1>
+    <Modal
+      open
+      title={adding ? "Add supplier" : `Edit ${editing.supplier.supplier_id}`}
+      okText={adding ? "Add supplier" : "Save"}
+      onOk={() => form.submit()}
+      onCancel={onClose}
+      confirmLoading={saving}
+      mask={{ closable: false }}
+      destroyOnHidden
+    >
+      <Form<SupplierValues>
+        form={form}
+        name="supplier"
+        layout="vertical"
+        initialValues={
+          editing.mode === "add"
+            ? { lead_time_days: 3 }
+            : { name: editing.supplier.name, lead_time_days: editing.supplier.lead_time_days }
+        }
+        onFinish={(values) => void save(values)}
+      >
+        <Form.Item
+          label="Name"
+          name="name"
+          rules={[
+            { required: true, whitespace: true, message: "Enter a name" },
+            { max: 120, message: "Use 120 characters or fewer" },
+          ]}
+        >
+          <Input autoFocus />
+        </Form.Item>
+        <Form.Item
+          label="Lead time (days)"
+          name="lead_time_days"
+          rules={[{ required: true, message: "Enter a whole number of 1 or more" }]}
+        >
+          <InputNumber min={1} precision={0} style={{ inlineSize: "100%" }} />
+        </Form.Item>
+        <ErrorAlert error={error} />
+      </Form>
+    </Modal>
+  );
+}
 
-      <form className="inline" onSubmit={add} aria-label="Add supplier">
-        <label>
-          Name
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} required />
-        </label>
-        <label>
-          Lead time (days)
-          <input
-            type="number"
-            min={1}
-            step={1}
-            value={newLead}
-            onChange={(e) => setNewLead(e.target.value)}
-            required
-          />
-        </label>
-        <button type="submit">Add supplier</button>
-      </form>
+// There is no delete control anywhere: nothing in the ERP is ever deleted (FR-022).
+export function SuppliersPage() {
+  const { data: suppliers, error, loading, reload } = useApiData<Supplier[]>("/suppliers");
+  const [editing, setEditing] = useState<Editing>(null);
 
-      {(actionError ?? error) && (
-        <p role="alert" className="error">
-          {actionError ?? error}
-        </p>
+  const columns: TableColumnsType<Supplier> = [
+    {
+      title: "ID",
+      dataIndex: "supplier_id",
+      width: 90,
+      sorter: byText((s) => s.supplier_id),
+      defaultSortOrder: "ascend",
+    },
+    { title: "Name", dataIndex: "name", sorter: byText((s) => s.name) },
+    {
+      title: "Lead time (days)",
+      dataIndex: "lead_time_days",
+      align: "end",
+      sorter: byNumber((s) => s.lead_time_days),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 110,
+      render: (_, s) => (
+        <Button
+          size="small"
+          icon={<EditOutlined aria-hidden />}
+          aria-label={`Edit ${s.supplier_id}`}
+          onClick={() => setEditing({ mode: "edit", supplier: s })}
+        >
+          Edit
+        </Button>
+      ),
+    },
+  ];
+
+  return (
+    <div className="page">
+      <PageHeader
+        title="Suppliers"
+        subtitle="Supplier records and their lead times."
+        actions={
+          <Button
+            type="primary"
+            icon={<PlusOutlined aria-hidden />}
+            onClick={() => setEditing({ mode: "add" })}
+          >
+            Add supplier
+          </Button>
+        }
+      />
+      <ErrorAlert error={error} />
+      <Card>
+        <Table<Supplier>
+          rowKey="supplier_id"
+          columns={columns}
+          dataSource={suppliers ?? []}
+          loading={loading}
+          pagination={pagination}
+        />
+      </Card>
+      {editing && (
+        <SupplierModal
+          editing={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null);
+            reload();
+          }}
+        />
       )}
-      {loading && <p className="muted">Loading…</p>}
-
-      {suppliers && (
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Lead time (days)</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {suppliers.map((s) =>
-              editingId === s.supplier_id ? (
-                <tr key={s.supplier_id}>
-                  <td>{s.supplier_id}</td>
-                  <td>
-                    <input
-                      aria-label={`Name for ${s.supplier_id}`}
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      aria-label={`Lead time for ${s.supplier_id}`}
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={editLead}
-                      onChange={(e) => setEditLead(e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <button type="button" onClick={() => void save(s.supplier_id)}>
-                      Save
-                    </button>{" "}
-                    <button type="button" onClick={() => setEditingId(null)}>
-                      Cancel
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={s.supplier_id}>
-                  <td>{s.supplier_id}</td>
-                  <td>{s.name}</td>
-                  <td>{s.lead_time_days}</td>
-                  <td>
-                    <button type="button" onClick={() => startEdit(s)}>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ),
-            )}
-          </tbody>
-        </table>
-      )}
-    </section>
+    </div>
   );
 }

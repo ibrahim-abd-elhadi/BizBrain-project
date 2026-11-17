@@ -1,8 +1,8 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PurchaseOrdersPage } from "../erp/PurchaseOrdersPage";
+import { user } from "./antd";
 
 const PRODUCTS = [
   { product_id: "P001", name: "Paracetamol 500 mg", preferred_supplier_id: "S001", pack_multiple: 10, max_order_qty: 400 },
@@ -66,7 +66,7 @@ describe("purchase orders screen", () => {
       </MemoryRouter>,
     );
 
-    await userEvent.click(await screen.findByRole("button", { name: /confirm/i }));
+    await user().click(await screen.findByRole("button", { name: /confirm/i }));
 
     await waitFor(() => expect(screen.queryByRole("button", { name: /confirm/i })).not.toBeInTheDocument());
     expect(screen.getAllByText("confirmed")).toHaveLength(2);
@@ -74,5 +74,17 @@ describe("purchase orders screen", () => {
       "/api/v1/erp/purchase-orders/7/confirm",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+  it("shows draft and confirmed as colored tags", async () => {
+    mockApi();
+    render(
+      <MemoryRouter>
+        <PurchaseOrdersPage />
+      </MemoryRouter>,
+    );
+    const draft = await screen.findByText("draft", { selector: ".ant-tag" });
+    const confirmed = screen.getByText("confirmed", { selector: ".ant-tag" });
+    expect(draft.className).toMatch(/gold/);
+    expect(confirmed.className).toMatch(/green/);
   });
 });

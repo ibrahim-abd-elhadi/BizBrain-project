@@ -1,7 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SalesPage } from "../erp/sales/SalesPage";
+import { chooseOption } from "./antd";
 
 const PRODUCTS = [
   { product_id: "P001", name: "Paracetamol 500 mg", preferred_supplier_id: "S001", pack_multiple: 10, max_order_qty: 400 },
@@ -69,5 +70,33 @@ describe("sales screen", () => {
     await screen.findByTestId("today-cairo");
     expect(screen.getByRole("combobox", { name: /^product$/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /delete|remove/i })).not.toBeInTheDocument();
+  });
+  it("shows day status as colored tags", async () => {
+    mockApi();
+    render(
+      <MemoryRouter>
+        <SalesPage />
+      </MemoryRouter>,
+    );
+    const open = await screen.findByText("open", { selector: ".ant-tag" });
+    const closed = screen.getByText("closed", { selector: ".ant-tag" });
+    expect(open.className).toMatch(/blue/);
+    expect(closed.className).toMatch(/green/);
+  });
+
+  it("filters by product with the same request as before", async () => {
+    const fetchMock = mockApi();
+    render(
+      <MemoryRouter>
+        <SalesPage />
+      </MemoryRouter>,
+    );
+    await screen.findByTestId("today-cairo");
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/v1/erp/products", expect.anything()));
+
+    await chooseOption(screen.getByRole("combobox", { name: /^product$/i }), "Ibuprofen 400 mg (P002)");
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/v1/erp/sales?product_id=P002", expect.anything()),
+    );
   });
 });
