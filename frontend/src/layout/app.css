@@ -1,0 +1,97 @@
+:root {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1c2530;
+  background: #f5f7fa;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.synthetic-banner {
+  background: #fff3bf;
+  color: #5c4a00;
+  border-bottom: 1px solid #e6c84d;
+  padding: 6px 16px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #d9dee5;
+  flex-wrap: wrap;
+}
+
+.app-header nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.app-header nav a {
+  color: #1c4b82;
+  text-decoration: none;
+}
+
+.app-header nav a.active {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+main {
+  padding: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  background: #fff;
+}
+
+th,
+td {
+  border: 1px solid #d9dee5;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+th {
+  background: #eef2f7;
+}
+
+form.inline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 12px 0;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #a61e1e;
+  margin: 8px 0;
+}
+
+.muted {
+  color: #5d6b7a;
+}

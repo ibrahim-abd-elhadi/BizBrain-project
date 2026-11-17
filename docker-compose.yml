@@ -1,0 +1,64 @@
+# BizBrain: one machine, five services (README Section 1).
+# brain-api and brain-worker are placeholders behind the "brain" profile until a Brain feature fills them in.
+
+services:
+  postgres:
+    image: postgres:18.7-alpine
+    environment:
+      # Bootstrap superuser: used only by the init script and manual administration.
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # One login per database; the init script creates them (research R-09).
+      ERP_DB_USER: ${ERP_DB_USER}
+      ERP_DB_PASSWORD: ${ERP_DB_PASSWORD}
+      BRAIN_DB_USER: ${BRAIN_DB_USER}
+      BRAIN_DB_PASSWORD: ${BRAIN_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  erp-backend:
+    build: ./erp-backend
+    environment:
+      # erp-backend connects as the ERP login, which can reach only erp_db.
+      ERP_DATABASE_URL: postgresql+psycopg://${ERP_DB_USER}:${ERP_DB_PASSWORD}@postgres:5432/erp_db
+      ERP_JWT_PRIVATE_KEY_FILE: /run/erp-keys/erp_jwt_ed25519.pem
+      ERP_JWT_TTL_MINUTES: ${ERP_JWT_TTL_MINUTES:-480}
+      ERP_MANAGER_USERNAME: ${ERP_MANAGER_USERNAME:-}
+      ERP_MANAGER_PASSWORD: ${ERP_MANAGER_PASSWORD:-}
+      ERP_SPIKE_Z: ${ERP_SPIKE_Z:-4}
+      ERP_SIMULATE_BATCH_FRACTION: ${ERP_SIMULATE_BATCH_FRACTION:-0.25}
+      ERP_SIMULATE_RETURN_RATE: ${ERP_SIMULATE_RETURN_RATE:-0.02}
+      ERP_RANDOM_SEED: ${ERP_RANDOM_SEED:-}
+      ERP_SEED_RANDOM_SEED: ${ERP_SEED_RANDOM_SEED:-20261202}
+    volumes:
+      - ./secrets/erp_jwt_ed25519.pem:/run/erp-keys/erp_jwt_ed25519.pem:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${ERP_BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - erp-backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+  # Placeholders: a later Brain feature adds the Dockerfile and the command for each.
+  brain-api:
+    build: ./brain
+    profiles: ["brain"]
+
+  brain-worker:
+    build: ./brain
+    profiles: ["brain"]
+
+volumes:
+  pgdata:
