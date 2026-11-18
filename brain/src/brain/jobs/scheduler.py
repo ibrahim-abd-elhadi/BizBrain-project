@@ -31,7 +31,9 @@ def needs_catch_up(session: Session, now: datetime | None = None) -> bool:
     now = now or now_utc()
     today = today_cairo(now)
     hour, minute = get_settings().end_of_day_hour_minute
-    if now.astimezone(CAIRO) < datetime(today.year, today.month, today.day, hour, minute, tzinfo=CAIRO):
+    if now.astimezone(CAIRO) < datetime(
+        today.year, today.month, today.day, hour, minute, tzinfo=CAIRO
+    ):
         return False
     done = session.scalar(
         select(JobRun.id).where(

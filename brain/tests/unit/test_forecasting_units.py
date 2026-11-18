@@ -96,7 +96,14 @@ def test_features_at_an_origin() -> None:
     origin = END  # index 59
     X, scale, dates = features.rows_for_origin(s, origin, 14)
     assert features.FEATURES == [
-        "product", "dow", "h", "seasonal_naive", "dow_mean_4w", "mean_7", "sd_28", "log_scale",
+        "product",
+        "dow",
+        "h",
+        "seasonal_naive",
+        "dow_mean_4w",
+        "mean_7",
+        "sd_28",
+        "log_scale",
     ]
     mean28 = statistics.mean(values[-28:])
     assert scale.tolist() == [mean28] * 14
@@ -138,7 +145,9 @@ def test_ranges_from_errors() -> None:
     yhat = np.array([10.0, 2.0])
     errors = np.array([-5.0, -1.0, 0.0, 1.0, 2.0, 3.0, 8.0, 4.0, -2.0, 1.0])
     low, high, q10, q90 = ranges.bounds(yhat, errors, sd=3.0, settings=SETTINGS)
-    assert q10 == pytest.approx(np.percentile(errors, 10)) and q90 == pytest.approx(np.percentile(errors, 90))
+    assert q10 == pytest.approx(np.percentile(errors, 10)) and q90 == pytest.approx(
+        np.percentile(errors, 90)
+    )
     assert low.tolist() == pytest.approx([max(0, 10 + q10), max(0.0, min(2.0, 2 + q10))])
     assert all(0 <= lo <= y <= hi for lo, y, hi in zip(low, yhat, high))
 
@@ -165,6 +174,8 @@ def test_short_history_ranges() -> None:
 
 def test_no_pickle_import_anywhere_in_the_brain() -> None:
     src = Path(__file__).resolve().parents[2] / "src"
-    banned = re.compile(r"^\s*(import|from)\s+(pickle|cPickle|joblib|cloudpickle|dill)\b", re.MULTILINE)
+    banned = re.compile(
+        r"^\s*(import|from)\s+(pickle|cPickle|joblib|cloudpickle|dill)\b", re.MULTILINE
+    )
     for path in src.rglob("*.py"):
         assert not banned.search(path.read_text(encoding="utf-8")), path

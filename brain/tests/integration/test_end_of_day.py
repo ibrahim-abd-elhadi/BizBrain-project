@@ -65,7 +65,10 @@ def test_the_first_night(fake, worker_session) -> None:
     today = today_cairo()
     # The run started with its own sales poll.
     assert worker_session.scalar(select(func.count()).select_from(SalesDaily)) == 1800
-    assert run.summary["backtest_cuts"] == [seed_date(today, 62).isoformat(), seed_date(today, 76).isoformat()]
+    assert run.summary["backtest_cuts"] == [
+        seed_date(today, 62).isoformat(),
+        seed_date(today, 76).isoformat(),
+    ]
     assert run.summary["final_cut"] == seed_date(today, 90).isoformat()
 
     choices = _choices(worker_session, run.id)
@@ -100,10 +103,12 @@ def test_the_run_is_deterministic_and_ignores_the_open_day(fake, worker_session)
     a, b = _forecasts(worker_session, first), _forecasts(worker_session, second)
     assert a == b
     ca, cb = _choices(worker_session, first), _choices(worker_session, second)
-    assert {p: (c.chosen_model, c.sn_backtest_wape, c.lgbm_backtest_wape) for p, c in ca.items()} == {
-        p: (c.chosen_model, c.sn_backtest_wape, c.lgbm_backtest_wape) for p, c in cb.items()
-    }
-    bodies = [r.body for r in worker_session.scalars(select(ModelArtifact).order_by(ModelArtifact.id))]
+    assert {
+        p: (c.chosen_model, c.sn_backtest_wape, c.lgbm_backtest_wape) for p, c in ca.items()
+    } == {p: (c.chosen_model, c.sn_backtest_wape, c.lgbm_backtest_wape) for p, c in cb.items()}
+    bodies = [
+        r.body for r in worker_session.scalars(select(ModelArtifact).order_by(ModelArtifact.id))
+    ]
     assert len(bodies) == 2 and bodies[0] == bodies[1]
 
 
@@ -112,7 +117,9 @@ def test_eligibility_at_8_weeks_and_short_history(fake, worker_session) -> None:
     stamp = datetime.now(UTC) - timedelta(hours=2)
     for product, days in (("P021", 50), ("P022", 60), ("P023", 10)):
         for back in range(1, days + 1):
-            fake.put_sales(sales_row(product, today - timedelta(days=back), 5 + back % 3, 0, "closed", stamp))
+            fake.put_sales(
+                sales_row(product, today - timedelta(days=back), 5 + back % 3, 0, "closed", stamp)
+            )
     assert _eod() == 0
     run = _latest_run(worker_session)
     choices = _choices(worker_session, run.id)

@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     range_min_errors: int = Field(default=7, ge=1)
     artifact_keep_nights: int = Field(default=14, ge=1)
     forecasts_history_days: int = Field(default=28, ge=1)
+    product_id_pattern: str = r"^P[0-9]{3,}$"  # the ERP's product IDs (brain-api)
 
     # LightGBM (research R-08): deterministic, one thread, fixed seed.
     lgbm_num_leaves: int = Field(default=15, ge=2)

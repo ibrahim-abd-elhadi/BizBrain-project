@@ -184,7 +184,12 @@ def recommend(
         ss = safety_stock(sd_28, mean_28, lead, settings.safety_z, window_days)
     if reason is None and fol is not None and ss is not None and open_po is not None:
         quantity = order_quantity(
-            fol, ss, stock.available, open_po, product.pack_multiple, product.max_order_qty,
+            fol,
+            ss,
+            stock.available,
+            open_po,
+            product.pack_multiple,
+            product.max_order_qty,
             settings.default_pack_multiple,
         )
 

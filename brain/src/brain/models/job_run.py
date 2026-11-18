@@ -16,9 +16,7 @@ class JobRun(Base):
         CheckConstraint(
             "job IN ('sales-poll','hourly-window','end-of-day')", name="ck_job_run_job"
         ),
-        CheckConstraint(
-            "trigger IN ('schedule','manual','catch-up')", name="ck_job_run_trigger"
-        ),
+        CheckConstraint("trigger IN ('schedule','manual','catch-up')", name="ck_job_run_trigger"),
         CheckConstraint(
             "status IN ('running','succeeded','failed','skipped')", name="ck_job_run_status"
         ),

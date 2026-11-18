@@ -127,7 +127,9 @@ class CanonicalClient:
         except httpx.TimeoutException:
             raise CanonicalUnavailable(operation, "timeout") from None
         except httpx.HTTPError as exc:
-            raise CanonicalUnavailable(operation, f"transport error ({type(exc).__name__})") from None
+            raise CanonicalUnavailable(
+                operation, f"transport error ({type(exc).__name__})"
+            ) from None
         if response.status_code == 404:
             raise CanonicalNotFound(operation)
         if response.status_code != 200:

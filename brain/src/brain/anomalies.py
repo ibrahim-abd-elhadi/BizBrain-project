@@ -58,7 +58,11 @@ def _record(
     session.execute(
         statement.on_conflict_do_update(
             constraint="uq_anomaly_day_scope",
-            set_={k: statement.excluded[k] for k in values if k not in ("product_id", "business_date", "scope")},
+            set_={
+                k: statement.excluded[k]
+                for k in values
+                if k not in ("product_id", "business_date", "scope")
+            },
         )
     )
 
@@ -113,7 +117,19 @@ def check_intraday_spike(
         window.append(float(series.net[series.index_of(day)]) if day <= series.end else 0.0)
     z, mean, sd = zscore(window, today_net)
     if z >= settings.anomaly_z:
-        _record(session, series.product_id, today, "intraday", "spike", today_net, mean, sd, z, True, run_id)
+        _record(
+            session,
+            series.product_id,
+            today,
+            "intraday",
+            "spike",
+            today_net,
+            mean,
+            sd,
+            z,
+            True,
+            run_id,
+        )
         return True
     session.query(Anomaly).filter(
         Anomaly.product_id == series.product_id,

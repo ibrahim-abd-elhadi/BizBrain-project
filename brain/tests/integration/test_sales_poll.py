@@ -73,7 +73,9 @@ def test_the_next_poll_asks_from_the_watermark_minus_120_s(fake, worker_session,
     assert since == watermark - timedelta(seconds=120)
 
 
-def test_totals_are_replaced_not_added_and_older_never_wins(fake, worker_session, clock_now) -> None:
+def test_totals_are_replaced_not_added_and_older_never_wins(
+    fake, worker_session, clock_now
+) -> None:
     today = today_cairo()
     t1 = clock_now["now"]
     fake.put_sales(sales_row("P001", today, 10, 1, "open", t1))
@@ -91,13 +93,17 @@ def test_totals_are_replaced_not_added_and_older_never_wins(fake, worker_session
     # A re-read of the same version changes nothing; an older version never overwrites.
     clock_now["now"] += timedelta(minutes=5)
     fake.put_sales(sales_row("P001", today, 99, 0, "open", t1 + timedelta(minutes=1)))
-    fake.sales[("P001", today.isoformat())]["updated_at"] = (t1 + timedelta(minutes=1)).isoformat().replace("+00:00", "Z")
+    fake.sales[("P001", today.isoformat())]["updated_at"] = (
+        (t1 + timedelta(minutes=1)).isoformat().replace("+00:00", "Z")
+    )
     assert _poll() == 0
     again = _rows(worker_session)[("P001", today)]
     assert (again.units_sold, again.changed_at) == (25, row.changed_at)
 
 
-def test_a_poll_that_fails_halfway_keeps_the_old_watermark(fake, worker_session, clock_now, settings_override) -> None:
+def test_a_poll_that_fails_halfway_keeps_the_old_watermark(
+    fake, worker_session, clock_now, settings_override
+) -> None:
     settings_override(BRAIN_POLL_PAGE_LIMIT="500")
     fake.fail["sales_page_2"] = 503
     assert _poll() == 1
@@ -115,12 +121,16 @@ def test_a_closed_day_arrives_closed(fake, worker_session, clock_now) -> None:
     fake.put_sales(sales_row("P002", today, 5, 0, "open", clock_now["now"] - timedelta(minutes=10)))
     assert _poll() == 0
     clock_now["now"] += timedelta(minutes=5)
-    fake.put_sales(sales_row("P002", today, 5, 0, "closed", clock_now["now"] - timedelta(seconds=30)))
+    fake.put_sales(
+        sales_row("P002", today, 5, 0, "closed", clock_now["now"] - timedelta(seconds=30))
+    )
     assert _poll() == 0
     assert _rows(worker_session)[("P002", today)].day_status == "closed"
 
 
-def test_a_refused_token_stores_nothing(fake, worker_session, caplog, tmp_path: Path, settings_override) -> None:
+def test_a_refused_token_stores_nothing(
+    fake, worker_session, caplog, tmp_path: Path, settings_override
+) -> None:
     from brain.models import JobRun
 
     bad = tmp_path / "token"
@@ -129,11 +139,17 @@ def test_a_refused_token_stores_nothing(fake, worker_session, caplog, tmp_path: 
     assert _poll() == 1
     assert _rows(worker_session) == {} and _watermark(worker_session) is None
     run = worker_session.scalars(select(JobRun)).one()
-    assert run.status == "failed" and "GET /sales" in run.summary["error"] and "401" in run.summary["error"]
+    assert (
+        run.status == "failed"
+        and "GET /sales" in run.summary["error"]
+        and "401" in run.summary["error"]
+    )
     assert "expired-token" not in caplog.text and TOKEN not in caplog.text
 
 
-def test_a_missing_token_file_sends_nothing_and_recovers(fake, worker_session, tmp_path: Path, settings_override) -> None:
+def test_a_missing_token_file_sends_nothing_and_recovers(
+    fake, worker_session, tmp_path: Path, settings_override
+) -> None:
     from brain.models import JobRun
 
     missing = tmp_path / "gone" / "brain_service_token"

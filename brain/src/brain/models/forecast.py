@@ -16,9 +16,7 @@ class Forecast(Base):
         CheckConstraint("model IN ('seasonal_naive','lightgbm')", name="ck_forecast_model"),
     )
 
-    job_run_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("job_run.id"), primary_key=True
-    )
+    job_run_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("job_run.id"), primary_key=True)
     product_id: Mapped[str] = mapped_column(Text, primary_key=True)
     target_date: Mapped[date] = mapped_column(Date, primary_key=True)
     model: Mapped[str] = mapped_column(Text, nullable=False)

@@ -178,3 +178,21 @@ body {
   gap: 12px;
   margin-block-start: 16px;
 }
+
+/* Brain screens (feature 003). */
+.small-note {
+  font-size: 12px;
+}
+
+.forecast-chart {
+  inline-size: 100%;
+}
+
+.anomaly-list {
+  margin: 4px 0 0;
+  padding-inline-start: 20px;
+}
+
+.nowrap {
+  white-space: nowrap;
+}

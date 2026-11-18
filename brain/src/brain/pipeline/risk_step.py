@@ -93,6 +93,10 @@ def run_risk(
         )
     ):
         reasons[code] = reasons.get(code, 0) + 1
-    summary: dict[str, Any] = {"risk_computed": computed, "risk_kept": kept, "no_forecast": no_forecast}
+    summary: dict[str, Any] = {
+        "risk_computed": computed,
+        "risk_kept": kept,
+        "no_forecast": no_forecast,
+    }
     summary.update({f"reason_{k}": v for k, v in sorted(reasons.items())})
     return summary

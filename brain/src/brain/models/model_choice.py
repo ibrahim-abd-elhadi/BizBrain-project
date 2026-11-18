@@ -16,9 +16,7 @@ class ModelChoice(Base):
         ),
     )
 
-    job_run_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("job_run.id"), primary_key=True
-    )
+    job_run_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("job_run.id"), primary_key=True)
     product_id: Mapped[str] = mapped_column(Text, primary_key=True)
     history_days: Mapped[int] = mapped_column(Integer, nullable=False)
     lgbm_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False)

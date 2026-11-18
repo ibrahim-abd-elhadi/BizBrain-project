@@ -62,7 +62,9 @@ def test_an_artifact_round_trips_and_refuses_tampering(worker_session) -> None:
         {"body": row.body.replace("Tree=0", "Tree=00", 1)},
         {"lightgbm_version": "0.0.1"},
     ):
-        bad = ModelArtifact(**{**{c.name: getattr(row, c.name) for c in ModelArtifact.__table__.columns}, **tamper})
+        bad = ModelArtifact(
+            **{**{c.name: getattr(row, c.name) for c in ModelArtifact.__table__.columns}, **tamper}
+        )
         with pytest.raises(artifacts.ArtifactRefused):
             artifacts.load(bad, expected_features=["a", "b"])
     with pytest.raises(artifacts.ArtifactRefused):
@@ -76,7 +78,9 @@ def test_old_artifacts_are_pruned(worker_session) -> None:
     today = today_cairo()
     for back in (20, 15, 13, 0):
         run_id = _run(worker_session, day=today - timedelta(days=back))
-        artifacts.save(worker_session, _tiny_booster(), run_id, today - timedelta(days=back + 1), {})
+        artifacts.save(
+            worker_session, _tiny_booster(), run_id, today - timedelta(days=back + 1), {}
+        )
     artifacts.prune(worker_session, keep_nights=14, today=today)
     worker_session.commit()
     kept = sorted(r.trained_through for r in worker_session.scalars(select(ModelArtifact)))
@@ -93,8 +97,12 @@ def _evaluate(session, product, model, day, forecast, actual, backtest_wape):
     run_id = _run(session, day=day)
     session.add(
         ForecastEvaluation(
-            product_id=product, business_date=day, job_run_id=run_id, model=model,
-            forecast=Decimal(forecast), actual=actual,
+            product_id=product,
+            business_date=day,
+            job_run_id=run_id,
+            model=model,
+            forecast=Decimal(forecast),
+            actual=actual,
         )
     )
     session.flush()
@@ -107,7 +115,9 @@ def test_degradation_needs_7_days_and_replaces_lightgbm_the_next_night(worker_se
     start = date(2026, 11, 1)
     # Six terrible days: not judged yet (needs 7).
     for i in range(6):
-        health = _evaluate(worker_session, "P001", "lightgbm", start + timedelta(days=i), 30, 10, 0.2)
+        health = _evaluate(
+            worker_session, "P001", "lightgbm", start + timedelta(days=i), 30, 10, 0.2
+        )
         assert health.live_wape is None and not health.degraded
     seventh = start + timedelta(days=6)
     health = _evaluate(worker_session, "P001", "lightgbm", seventh, 30, 10, 0.2)
@@ -123,7 +133,9 @@ def test_a_switch_of_model_kind_starts_a_new_window(worker_session) -> None:
     start = date(2026, 11, 1)
     for i in range(8):
         _evaluate(worker_session, "P002", "lightgbm", start + timedelta(days=i), 30, 10, 0.2)
-    health = _evaluate(worker_session, "P002", "seasonal_naive", start + timedelta(days=8), 10, 10, 0.3)
+    health = _evaluate(
+        worker_session, "P002", "seasonal_naive", start + timedelta(days=8), 10, 10, 0.3
+    )
     assert health.model == "seasonal_naive" and health.evaluated_days == 1
     assert not health.degraded and health.window_started == start + timedelta(days=8)
 
@@ -131,7 +143,9 @@ def test_a_switch_of_model_kind_starts_a_new_window(worker_session) -> None:
 def test_the_window_is_at_most_28_days(worker_session) -> None:
     start = date(2026, 10, 1)
     for i in range(35):
-        health = _evaluate(worker_session, "P003", "seasonal_naive", start + timedelta(days=i), 11, 10, 0.5)
+        health = _evaluate(
+            worker_session, "P003", "seasonal_naive", start + timedelta(days=i), 11, 10, 0.5
+        )
     assert health.evaluated_days == 28 and float(health.live_wape) == pytest.approx(0.1)
 
 
@@ -145,7 +159,9 @@ def test_z_score_rule() -> None:
     assert (mean, sd, z) == (10.0, 1.0, 4.0)  # sd = 0 counts as 1
     window = [8, 12] * 14
     z, mean, sd = zscore([float(v) for v in window], 20.0)
-    assert mean == 10.0 and sd == pytest.approx(np.std(window, ddof=1)) and z == pytest.approx(10 / sd)
+    assert (
+        mean == 10.0 and sd == pytest.approx(np.std(window, ddof=1)) and z == pytest.approx(10 / sd)
+    )
 
 
 def test_the_first_scan_finds_the_five_planted_events_and_one_natural_spike(worker_session) -> None:
@@ -176,7 +192,9 @@ def test_the_first_scan_finds_the_five_planted_events_and_one_natural_spike(work
         ]
     )
     assert rows == expected and found == 6
-    progress = {p.product_id: p.scanned_through for p in worker_session.scalars(select(AnomalyScanProgress))}
+    progress = {
+        p.product_id: p.scanned_through for p in worker_session.scalars(select(AnomalyScanProgress))
+    }
     assert set(progress.values()) == {end} and len(progress) == 20
 
     # The next night scans only the new day; a spike on it raises risk; a drop never does.
@@ -189,7 +207,11 @@ def test_the_first_scan_finds_the_five_planted_events_and_one_natural_spike(work
     assert end2 == tomorrow_end
     found = scan_closed_days(worker_session, series2, end2, _run(worker_session), SETTINGS)
     worker_session.commit()
-    new = {(a.product_id, a.kind, a.raised_risk) for a in worker_session.scalars(select(Anomaly)) if a.business_date == tomorrow_end}
+    new = {
+        (a.product_id, a.kind, a.raised_risk)
+        for a in worker_session.scalars(select(Anomaly))
+        if a.business_date == tomorrow_end
+    }
     assert ("P005", "spike", True) in new
     assert all(not (kind == "drop" and raised) for _, kind, raised in new)
     assert found == len(new)

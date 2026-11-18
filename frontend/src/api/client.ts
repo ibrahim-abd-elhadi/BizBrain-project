@@ -1,8 +1,10 @@
-// Fetch wrapper for the ERP API (/api/v1/erp). Sends the bearer token from sessionStorage and
-// returns to the login screen on any 401 (research R-12). All storage access is guarded: it can
-// throw in private windows or when site data is blocked.
+// Fetch wrapper for the ERP API (/api/v1/erp) and the Brain API (/api/v1/brain). Both accept the
+// manager's ERP login token: it is sent from sessionStorage, and any 401 returns to the login
+// screen (research R-12; feature 003 R-18). All storage access is guarded: it can throw in
+// private windows or when site data is blocked.
 
-const BASE = "/api/v1/erp";
+export const ERP_BASE = "/api/v1/erp";
+export const BRAIN_BASE = "/api/v1/brain";
 const TOKEN_KEY = "erp_token";
 
 export class ApiError extends Error {
@@ -61,7 +63,7 @@ function isJsonBody(body: ApiInit["body"]): body is JsonBody {
   );
 }
 
-export async function apiFetch<T>(path: string, init: ApiInit = {}): Promise<T> {
+export async function apiFetch<T>(path: string, init: ApiInit = {}, base: string = ERP_BASE): Promise<T> {
   const headers = new Headers(init.headers);
   const token = getToken();
   if (token !== null) headers.set("Authorization", `Bearer ${token}`);
@@ -74,7 +76,7 @@ export async function apiFetch<T>(path: string, init: ApiInit = {}): Promise<T> 
     body = init.body; // FormData and the like: the browser sets the multipart Content-Type itself.
   }
 
-  const response = await fetch(`${BASE}${path}`, { ...init, headers, body });
+  const response = await fetch(`${base}${path}`, { ...init, headers, body });
 
   if (!response.ok) {
     let code = "HTTP_ERROR";

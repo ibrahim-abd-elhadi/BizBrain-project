@@ -101,7 +101,9 @@ def update_health(
 def replaced_tonight(healths: list[ModelHealth], day: date) -> set[str]:
     """Products whose LightGBM was marked degraded by tonight's evaluation of `day`."""
     return {
-        h.product_id for h in healths if h.model == "lightgbm" and h.degraded and h.degraded_on == day
+        h.product_id
+        for h in healths
+        if h.model == "lightgbm" and h.degraded and h.degraded_on == day
     }
 
 

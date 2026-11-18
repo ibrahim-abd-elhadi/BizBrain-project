@@ -81,7 +81,12 @@ def forecast_night(
             wape = choice.lgbm_backtest_wape if row.model == "lightgbm" else choice.sn_backtest_wape
         healths.append(
             evaluation.update_health(
-                session, row.product_id, row.model, end, float(wape) if wape is not None else None, settings
+                session,
+                row.product_id,
+                row.model,
+                end,
+                float(wape) if wape is not None else None,
+                settings,
             )
         )
     replaced = evaluation.replaced_tonight(healths, end)
@@ -116,9 +121,7 @@ def forecast_night(
         X, y = features.rows_for_training(all_series, end, horizon)
         if len(X):
             final_booster = lightgbm_model.train(X, y, settings)
-            artifacts.save(
-                session, final_booster, run_id, end, lightgbm_model.params(settings)
-            )
+            artifacts.save(session, final_booster, run_id, end, lightgbm_model.params(settings))
             artifacts.prune(session, settings.artifact_keep_nights, today_cairo())
 
     chosen_lgbm = 0

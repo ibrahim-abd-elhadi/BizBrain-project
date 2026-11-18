@@ -84,4 +84,8 @@ def rows_for_origin(
     oi = series.index_of(origin)
     stats = _origin_stats(series.y, oi)
     X = np.array([_row(series, oi, h, stats) for h in range(1, horizon + 1)], dtype=float)
-    return X, np.full(horizon, stats[0]), [origin + timedelta(days=h) for h in range(1, horizon + 1)]
+    return (
+        X,
+        np.full(horizon, stats[0]),
+        [origin + timedelta(days=h) for h in range(1, horizon + 1)],
+    )

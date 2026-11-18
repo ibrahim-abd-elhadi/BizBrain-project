@@ -20,12 +20,23 @@ function stubApi() {
     vi.fn(async (url: string) =>
       url === "/api/v1/erp/auth/me"
         ? json({ username: "manager" })
-        : json(url.startsWith("/api/v1/erp/sales") ? { today: "2026-11-18", items: [] } : []),
+        : url === "/api/v1/brain/risk"
+          ? json({ synthetic: true, results_exist: false, last_end_of_day: null, items: [] })
+          : json(url.startsWith("/api/v1/erp/sales") ? { today: "2026-11-18", items: [] } : []),
     ),
   );
 }
 
-const ROUTES = ["/login", "/products", "/suppliers", "/inventory", "/sales", "/purchase-orders"];
+const ROUTES = [
+  "/login",
+  "/products",
+  "/suppliers",
+  "/inventory",
+  "/sales",
+  "/purchase-orders",
+  "/brain/risk",
+  "/brain/forecasts",
+];
 
 describe("layout", () => {
   afterEach(() => {
@@ -68,7 +79,12 @@ describe("layout", () => {
       "Inventory",
       "Sales",
       "Purchase orders",
+      "Risk and insights",
+      "Forecasts",
     ]);
+    // The ERP screens and the Brain's read-only screens are two labelled groups.
+    expect(within(nav).getByText("ERP")).toBeInTheDocument();
+    expect(within(nav).getByText("Brain")).toBeInTheDocument();
     expect(within(nav).getByRole("link", { name: "Inventory" }).closest("li")).toHaveClass(
       "ant-menu-item-selected",
     );

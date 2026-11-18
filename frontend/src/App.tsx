@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { Navigate, Outlet, Route, Routes, useNavigate } from "react-router";
 import { isSignedIn, setUnauthenticatedHandler } from "./api/client";
+import { ForecastsPage } from "./brain/ForecastsPage";
+import { RiskPage } from "./brain/RiskPage";
 import { InventoryPage } from "./erp/InventoryPage";
 import { LoginPage } from "./erp/LoginPage";
 import { ProductsPage } from "./erp/ProductsPage";
@@ -30,6 +32,8 @@ export function AppRoutes() {
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/sales" element={<SalesPage />} />
           <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+          <Route path="/brain/risk" element={<RiskPage />} />
+          <Route path="/brain/forecasts" element={<ForecastsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/products" replace />} />
       </Route>

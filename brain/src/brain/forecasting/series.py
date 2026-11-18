@@ -70,7 +70,10 @@ def load_series(session: Session, today: date) -> tuple[date | None, dict[str, S
         return None, {}
     rows = session.execute(
         select(
-            SalesDaily.product_id, SalesDaily.business_date, SalesDaily.net_units, SalesDaily.day_status
+            SalesDaily.product_id,
+            SalesDaily.business_date,
+            SalesDaily.net_units,
+            SalesDaily.day_status,
         ).where(SalesDaily.business_date <= end)
     ).all()
     return end, build_series(((r[0], r[1], r[2], r[3]) for r in rows), end)

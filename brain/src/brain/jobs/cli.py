@@ -38,7 +38,9 @@ def _reset(assume_yes: bool) -> int:
 def _healthcheck() -> int:
     """Healthy when the worker database answers and the Brain's migrations are at head."""
     try:
-        head = ScriptDirectory.from_config(Config(str(get_settings().alembic_ini))).get_current_head()
+        head = ScriptDirectory.from_config(
+            Config(str(get_settings().alembic_ini))
+        ).get_current_head()
         with get_worker_engine().connect() as connection:
             current = MigrationContext.configure(connection).get_current_revision()
     except Exception as exc:  # noqa: BLE001
@@ -59,7 +61,9 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("job", choices=sorted(registry.JOBS))
     reset = commands.add_parser("reset", help="empty every Brain table (development)")
     reset.add_argument("--yes", action="store_true", help="don't ask for confirmation")
-    commands.add_parser("healthcheck", help="exit 0 if the database answers and migrations are at head")
+    commands.add_parser(
+        "healthcheck", help="exit 0 if the database answers and migrations are at head"
+    )
     args = parser.parse_args(argv)
 
     if args.command == "serve":

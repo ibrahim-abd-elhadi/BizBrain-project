@@ -40,8 +40,12 @@ def test_a_spike_raises_one_level_never_above_high() -> None:
 
 
 def test_safety_stock() -> None:
-    assert safety_stock(sd=4.47, mean=20.0, lead=7, z=1.65, days=28) == math.ceil(1.65 * 4.47 * math.sqrt(7))
-    assert safety_stock(sd=0.0, mean=3.2, lead=5, z=1.65, days=1) == 4  # fewer than 2 days: ceil(mean)
+    assert safety_stock(sd=4.47, mean=20.0, lead=7, z=1.65, days=28) == math.ceil(
+        1.65 * 4.47 * math.sqrt(7)
+    )
+    assert (
+        safety_stock(sd=0.0, mean=3.2, lead=5, z=1.65, days=1) == 4
+    )  # fewer than 2 days: ceil(mean)
 
 
 def test_forecast_over_lead_time_from_today() -> None:

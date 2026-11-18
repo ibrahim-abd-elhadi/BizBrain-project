@@ -36,3 +36,15 @@ export const appTheme: ThemeConfig = {
     },
   },
 };
+
+// Chart colors (feature 003 Forecasts): categorical slots 1 and 2 of the reference data-viz
+// palette, checked with its validator on the white card surface (lightness, chroma, colorblind
+// separation, contrast: all pass). The forecast is also dashed, so color is never the only cue.
+export const CHART = {
+  history: "#2a78d6",
+  forecast: "#eb6834",
+  bandOpacity: 0.18,
+  grid: "#e5e7eb",
+  axis: "#6b7280",
+  today: "#9ca3af",
+};

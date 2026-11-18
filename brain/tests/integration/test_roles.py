@@ -90,9 +90,7 @@ def test_the_role_script_is_idempotent_and_syncs_the_password(pg: PostgresContai
         code, output = pg.exec(["sh", SCRIPT])
         assert code == 0, output
     assert _granted(pg) == READ
-    code, output = pg.exec(
-        ["sh", "-c", f"BRAIN_API_DB_PASSWORD=rotated_pw sh {SCRIPT}"]
-    )
+    code, output = pg.exec(["sh", "-c", f"BRAIN_API_DB_PASSWORD=rotated_pw sh {SCRIPT}"])
     assert code == 0, output
     _api(pg, "rotated_pw").close()
     code, output = pg.exec(["sh", SCRIPT])  # back to the configured password

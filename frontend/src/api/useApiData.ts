@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, apiFetch } from "./client";
+import { ApiError, ERP_BASE, apiFetch } from "./client";
 
-/** Loads a GET endpoint. `reload()` fetches again and keeps the old data on screen meanwhile. */
-export function useApiData<T>(path: string) {
+/** Loads a GET endpoint (ERP by default, or `BRAIN_BASE`). `reload()` fetches again and keeps the
+ * old data on screen meanwhile. A null path loads nothing. */
+export function useApiData<T>(path: string | null, base: string = ERP_BASE) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
+    if (path === null) return;
     let cancelled = false;
-    apiFetch<T>(path)
+    apiFetch<T>(path, {}, base)
       .then((result) => {
         if (cancelled) return;
         setData(result);
@@ -22,7 +24,7 @@ export function useApiData<T>(path: string) {
     return () => {
       cancelled = true;
     };
-  }, [path, version]);
+  }, [path, base, version]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   return { data, error, reload, loading: data === null && error === null };

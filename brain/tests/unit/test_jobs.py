@@ -23,7 +23,10 @@ def test_the_three_triggers_fire_at_cairo_times(pg) -> None:
     assert _next(t["hourly-window"], start) == datetime(2026, 11, 18, 0, 7, tzinfo=CAIRO)
     assert _next(t["end-of-day"], start) == datetime(2026, 11, 18, 2, 0, tzinfo=CAIRO)
     # Across Egypt's daylight-saving changes (last Friday of April and of October 2026).
-    for day in (datetime(2026, 4, 23, 23, 0, tzinfo=CAIRO), datetime(2026, 10, 29, 23, 0, tzinfo=CAIRO)):
+    for day in (
+        datetime(2026, 4, 23, 23, 0, tzinfo=CAIRO),
+        datetime(2026, 10, 29, 23, 0, tzinfo=CAIRO),
+    ):
         fire = _next(t["end-of-day"], day)
         assert fire.astimezone(CAIRO).hour == 2 and fire.astimezone(CAIRO).minute == 0
         polls = [_next(t["sales-poll"], day)]
@@ -101,8 +104,13 @@ def test_reset_asks_first_and_then_empties_every_table(pg, worker_session, monke
     from brain.jobs.cli import main
     from brain.models import Base, PollState
 
-    worker_session.add(PollState(id=1, high_watermark=datetime(2026, 1, 1, tzinfo=CAIRO),
-                                 saved_at=datetime(2026, 1, 1, tzinfo=CAIRO)))
+    worker_session.add(
+        PollState(
+            id=1,
+            high_watermark=datetime(2026, 1, 1, tzinfo=CAIRO),
+            saved_at=datetime(2026, 1, 1, tzinfo=CAIRO),
+        )
+    )
     worker_session.commit()
     monkeypatch.setattr("builtins.input", lambda prompt="": "no")
     assert main(["reset"]) == 2
@@ -126,10 +134,15 @@ def test_catch_up_runs_a_missed_end_of_day_once(pg, worker_session, at_cairo) ->
         assert needs_catch_up(worker_session) is False
     with at_cairo("2026-11-18T09:00"):
         worker_session.add(
-            JobRun(job="end-of-day", trigger="schedule", business_date=datetime(2026, 11, 18).date(),
-                   started_at=datetime(2026, 11, 18, 2, 0, tzinfo=CAIRO),
-                   finished_at=datetime(2026, 11, 18, 2, 1, tzinfo=CAIRO),
-                   status="succeeded", summary={})
+            JobRun(
+                job="end-of-day",
+                trigger="schedule",
+                business_date=datetime(2026, 11, 18).date(),
+                started_at=datetime(2026, 11, 18, 2, 0, tzinfo=CAIRO),
+                finished_at=datetime(2026, 11, 18, 2, 1, tzinfo=CAIRO),
+                status="succeeded",
+                summary={},
+            )
         )
         worker_session.commit()
         assert needs_catch_up(worker_session) is False
@@ -139,5 +152,16 @@ def test_healthcheck(pg, settings_override) -> None:
     from brain.jobs.cli import main
 
     assert main(["healthcheck"]) == 0
-    settings_override(BRAIN_DATABASE_URL="postgresql+psycopg://nobody:x@127.0.0.1:1/brain_db?connect_timeout=2")
+    settings_override(
+        BRAIN_DATABASE_URL="postgresql+psycopg://nobody:x@127.0.0.1:1/brain_db?connect_timeout=2"
+    )
     assert main(["healthcheck"]) == 1
+
+
+def test_the_image_does_not_buffer_job_lines() -> None:
+    """Quickstart check 8 reads the job lines from `docker compose logs`: stdout in a container is
+    a pipe, which Python block-buffers unless told not to (found on the live stack)."""
+    from pathlib import Path
+
+    dockerfile = (Path(__file__).resolve().parents[2] / "Dockerfile").read_text(encoding="utf-8")
+    assert "PYTHONUNBUFFERED=1" in dockerfile

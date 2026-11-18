@@ -48,9 +48,7 @@ def start_postgres(init_dir: Path = INIT_DIR, extra_volume: tuple[Path, str] | N
     return container
 
 
-def connect(
-    server: PostgresContainer, user: str, password: str, dbname: str
-) -> psycopg.Connection:
+def connect(server: PostgresContainer, user: str, password: str, dbname: str) -> psycopg.Connection:
     """Connects, retrying while the server restarts after running the init scripts."""
     deadline = time.monotonic() + 60
     while True:
@@ -173,3 +171,93 @@ def settings_override(monkeypatch: pytest.MonkeyPatch) -> Callable[..., None]:
     yield _set
     monkeypatch.undo()
     reset_app_caches()
+
+
+# ---------------------------------------------------------------- brain-api (US4, US5)
+
+
+@pytest.fixture(scope="session")
+def manager_keys(tmp_path_factory: pytest.TempPathFactory):
+    """A test Ed25519 key pair standing in for the ERP's: (private key, public key file)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    private = Ed25519PrivateKey.generate()
+    path = tmp_path_factory.mktemp("erp-keys") / "erp_jwt_ed25519.pub.pem"
+    path.write_bytes(
+        private.public_key().public_bytes(
+            serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+    )
+    return private, path
+
+
+@pytest.fixture
+def sign(manager_keys) -> Callable[..., str]:
+    """sign(aud=..., iss=..., minutes=..., key=...) -> a token shaped like the ERP's login token."""
+    from datetime import UTC, timedelta
+
+    import jwt
+
+    def _sign(
+        *,
+        aud: str = "bizbrain",
+        iss: str = "bizbrain-erp",
+        minutes: int = 60,
+        key=None,
+        sub="manager",
+    ) -> str:
+        now = datetime.now(UTC)
+        claims = {
+            "iss": iss,
+            "aud": aud,
+            "sub": sub,
+            "iat": now,
+            "exp": now + timedelta(minutes=minutes),
+        }
+        return jwt.encode(claims, key or manager_keys[0], algorithm="EdDSA")
+
+    return _sign
+
+
+@pytest.fixture
+def api_client(pg, manager_keys, monkeypatch: pytest.MonkeyPatch):
+    """brain-api in-process, with the test public key and the api login only."""
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setenv("BRAIN_ERP_JWT_PUBLIC_KEY_FILE", str(manager_keys[1]))
+    reset_app_caches()
+    from brain.api.app import create_app
+
+    with TestClient(create_app()) as client:
+        yield client
+    reset_app_caches()
+
+
+@pytest.fixture
+def manager(sign) -> dict[str, str]:
+    return {"Authorization": f"Bearer {sign()}"}
+
+
+@pytest.fixture
+def fake_erp(pg, monkeypatch: pytest.MonkeyPatch):
+    """The fake Canonical API on the seed fixture, wired into the Brain's client."""
+    from datetime import UTC, timedelta
+
+    from brain.clock import today_cairo
+
+    from fakes import FakeCanonical
+
+    fake = FakeCanonical()
+    fake.load_seed(today_cairo(), datetime.now(UTC) - timedelta(hours=2))
+    monkeypatch.setattr("brain.canonical.client.TEST_TRANSPORT", fake.transport())
+    return fake
+
+
+@pytest.fixture
+def first_night(fake_erp):
+    """The seed fixture copied and one end-of-day run done."""
+    from brain.jobs.registry import run_job
+
+    assert run_job("end-of-day", trigger="manual") == 0
+    return fake_erp

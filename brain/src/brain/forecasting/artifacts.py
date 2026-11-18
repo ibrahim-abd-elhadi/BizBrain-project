@@ -29,7 +29,11 @@ def _sha256(text: str) -> str:
 
 
 def save(
-    session: Session, booster: lgb.Booster, run_id: int, trained_through: date, params: dict[str, Any]
+    session: Session,
+    booster: lgb.Booster,
+    run_id: int,
+    trained_through: date,
+    params: dict[str, Any],
 ) -> ModelArtifact:
     body = booster.model_to_string()
     row = ModelArtifact(

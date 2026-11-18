@@ -56,7 +56,13 @@ def run_hourly_window(run: RunContext) -> dict[str, Any]:
 
         forecast_run = risk_step.last_forecast_run(session)
         if forecast_run is None:
-            return {**summary, "risk_computed": 0, "risk_kept": 0, "no_forecast": len(changed), "spikes": 0}
+            return {
+                **summary,
+                "risk_computed": 0,
+                "risk_kept": 0,
+                "no_forecast": len(changed),
+                "spikes": 0,
+            }
         forecasts = risk_step.stored_forecasts(session, forecast_run, today)
         _, series = load_series(session, today)
 

@@ -76,7 +76,9 @@ def poll_sales(client: CanonicalClient, settings: Settings) -> dict[str, Any]:
         rows += len(page.items)
         if page.next_cursor is None:
             with worker_session() as session:
-                session.merge(PollState(id=1, high_watermark=page.high_watermark, saved_at=now_utc()))
+                session.merge(
+                    PollState(id=1, high_watermark=page.high_watermark, saved_at=now_utc())
+                )
                 session.commit()
             return {"pages": pages, "rows": rows, "changed": changed}
         cursor = page.next_cursor

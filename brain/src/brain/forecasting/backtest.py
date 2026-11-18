@@ -37,7 +37,11 @@ def targets(series: Series, origin: date, end: date, horizon: int) -> list[date]
     the origin."""
     if origin < series.start:
         return []
-    return [origin + timedelta(days=h) for h in range(1, horizon + 1) if origin + timedelta(days=h) <= end]
+    return [
+        origin + timedelta(days=h)
+        for h in range(1, horizon + 1)
+        if origin + timedelta(days=h) <= end
+    ]
 
 
 def seasonal_naive_backtest(

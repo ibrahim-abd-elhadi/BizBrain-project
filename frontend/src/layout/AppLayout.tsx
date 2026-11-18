@@ -1,6 +1,8 @@
 import {
+  AlertOutlined,
   DatabaseOutlined,
   FileTextOutlined,
+  FundOutlined,
   LineChartOutlined,
   LogoutOutlined,
   MedicineBoxOutlined,
@@ -20,6 +22,18 @@ const LINKS = [
   { to: "/sales", label: "Sales", icon: <LineChartOutlined aria-hidden /> },
   { to: "/purchase-orders", label: "Purchase orders", icon: <FileTextOutlined aria-hidden /> },
 ];
+
+/** The Brain's read-only screens (feature 003). */
+const BRAIN_LINKS = [
+  { to: "/brain/risk", label: "Risk and insights", icon: <AlertOutlined aria-hidden /> },
+  { to: "/brain/forecasts", label: "Forecasts", icon: <FundOutlined aria-hidden /> },
+];
+
+const menuItem = (link: (typeof LINKS)[number]) => ({
+  key: link.to,
+  icon: link.icon,
+  label: <Link to={link.to}>{link.label}</Link>,
+});
 
 /** The signed-in manager's username, from the existing GET /auth/me. */
 function useCurrentUser(signedIn: boolean): string | null {
@@ -47,7 +61,7 @@ export function AppLayout() {
   const { pathname } = useLocation(); // re-renders on navigation, so the shell follows sign-in
   const signedIn = isSignedIn();
   const username = useCurrentUser(signedIn);
-  const current = LINKS.find((link) => pathname.startsWith(link.to))?.to;
+  const current = [...LINKS, ...BRAIN_LINKS].find((link) => pathname.startsWith(link.to))?.to;
 
   function signOut() {
     logout();
@@ -88,11 +102,20 @@ export function AppLayout() {
               <Menu
                 mode="inline"
                 selectedKeys={current ? [current] : []}
-                items={LINKS.map((link) => ({
-                  key: link.to,
-                  icon: link.icon,
-                  label: <Link to={link.to}>{link.label}</Link>,
-                }))}
+                items={[
+                  {
+                    type: "group",
+                    key: "erp",
+                    label: "ERP",
+                    children: LINKS.map(menuItem),
+                  },
+                  {
+                    type: "group",
+                    key: "brain",
+                    label: "Brain",
+                    children: BRAIN_LINKS.map(menuItem),
+                  },
+                ]}
               />
             </nav>
           </Layout.Sider>

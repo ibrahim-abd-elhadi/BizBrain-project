@@ -39,7 +39,9 @@ def _latest_run(session, job: str):
     from brain.models import JobRun
 
     session.expire_all()
-    return session.scalars(select(JobRun).where(JobRun.job == job).order_by(JobRun.id.desc())).first()
+    return session.scalars(
+        select(JobRun).where(JobRun.job == job).order_by(JobRun.id.desc())
+    ).first()
 
 
 def _newest(session) -> dict:
@@ -65,7 +67,11 @@ def _forecast(session, run_id: int, product: str, today: date) -> list[float]:
 
     rows = session.scalars(
         select(Forecast)
-        .where(Forecast.job_run_id == run_id, Forecast.product_id == product, Forecast.target_date >= today)
+        .where(
+            Forecast.job_run_id == run_id,
+            Forecast.product_id == product,
+            Forecast.target_date >= today,
+        )
         .order_by(Forecast.target_date)
     )
     return [float(f.yhat) for f in rows]
@@ -100,7 +106,9 @@ def _check_by_hand(session, row, today: date) -> None:
         assert float(row.days_of_cover) == pytest.approx(cover, abs=0.01)
     lead = row.lead_time_days
     assert row.base_risk == _level_by_hand(cover, lead)
-    expected = LEVELS[min(LEVELS.index(row.base_risk) + 1, 2)] if row.raised_by_spike else row.base_risk
+    expected = (
+        LEVELS[min(LEVELS.index(row.base_risk) + 1, 2)] if row.raised_by_spike else row.base_risk
+    )
     assert row.risk == expected
 
     days = lead + row.review_period_days
@@ -142,7 +150,10 @@ def test_the_first_night_sets_risk_and_a_quantity_for_every_product(fake, worker
     assert len(refs) == 20
     p003 = refs["P003"]
     assert (p003.name, p003.preferred_supplier_id, p003.pack_multiple, p003.max_order_qty) == (
-        "Amoxicillin 500 mg capsules", "S004", 12, 240,
+        "Amoxicillin 500 mg capsules",
+        "S004",
+        12,
+        240,
     )
     assert (p003.supplier_name, p003.lead_time_days) == ("Delta Health Trading", 7)
     assert p003.product_read_at is not None and p003.supplier_read_at is not None
@@ -198,7 +209,9 @@ def test_supplier_unavailable_gives_no_supplier(fake, worker_session) -> None:
 
 
 @pytest.mark.parametrize("failing", ["product", "inventory"])
-def test_a_failed_product_or_stock_read_keeps_the_previous_result(fake, worker_session, failing) -> None:
+def test_a_failed_product_or_stock_read_keeps_the_previous_result(
+    fake, worker_session, failing
+) -> None:
     assert _run("end-of-day") == 0
     first = _latest_run(worker_session, "end-of-day").id
     fake.fail[failing] = 503
@@ -237,9 +250,9 @@ def test_an_hourly_spike_raises_only_the_changed_product(fake, worker_session) -
 
     hourly = _latest_run(worker_session, "hourly-window")
     spikes = list(worker_session.scalars(select(Anomaly).where(Anomaly.scope == "intraday")))
-    assert [(a.product_id, a.kind, a.business_date, a.net_units, a.raised_risk) for a in spikes] == [
-        ("P005", "spike", today, net, True)
-    ]
+    assert [
+        (a.product_id, a.kind, a.business_date, a.net_units, a.raised_risk) for a in spikes
+    ] == [("P005", "spike", today, net, True)]
     assert float(spikes[0].z) >= 4
 
     after = _newest(worker_session)
@@ -252,9 +265,12 @@ def test_an_hourly_spike_raises_only_the_changed_product(fake, worker_session) -
     for product, row in after.items():
         if product != "P005":
             assert row.id == night[product].id and row.computed_at == night[product].computed_at
-    assert worker_session.scalar(
-        select(func.count()).select_from(RiskResult).where(RiskResult.job_run_id == hourly.id)
-    ) == 1
+    assert (
+        worker_session.scalar(
+            select(func.count()).select_from(RiskResult).where(RiskResult.job_run_id == hourly.id)
+        )
+        == 1
+    )
     assert hourly.summary["risk_computed"] == 1
 
     # A second window with nothing new recomputes nothing.
@@ -272,9 +288,12 @@ def test_an_hourly_spike_raises_only_the_changed_product(fake, worker_session) -
     assert not nxt.raised_by_spike and nxt.risk == nxt.base_risk
     _check_by_hand(worker_session, nxt, tomorrow)
     # The intraday spike stays visible as history.
-    assert worker_session.scalar(
-        select(func.count()).select_from(Anomaly).where(Anomaly.scope == "intraday")
-    ) == 1
+    assert (
+        worker_session.scalar(
+            select(func.count()).select_from(Anomaly).where(Anomaly.scope == "intraday")
+        )
+        == 1
+    )
 
 
 def test_a_slow_sellers_spike_counts_missing_days_as_zero(fake, worker_session) -> None:
