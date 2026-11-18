@@ -39,8 +39,9 @@ def last_end_of_day(session) -> Any:
     )
 
 
-@router.get("/risk")
-def list_risk(session: SessionDep) -> dict[str, Any]:
+def risk_rows(session) -> list[dict[str, Any]]:
+    """The newest risk result per product, highest risk first: the rows of GET /risk, shared with
+    the assistant's get_risk_list tool (feature 005)."""
     newest = list(
         session.scalars(
             select(RiskResult)
@@ -115,6 +116,12 @@ def list_risk(session: SessionDep) -> dict[str, Any]:
             i["product_id"],
         )
     )
+    return items
+
+
+@router.get("/risk")
+def list_risk(session: SessionDep) -> dict[str, Any]:
+    items = risk_rows(session)
     finished = last_end_of_day(session)
     return {
         "synthetic": True,

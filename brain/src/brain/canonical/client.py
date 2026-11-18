@@ -76,6 +76,16 @@ class Supplier:
 
 
 @dataclass(frozen=True)
+class OpenOrder:
+    """One open purchase order, with this product's open quantity (feature 005's chat tool)."""
+
+    purchase_order_id: int
+    supplier_id: str
+    status: str
+    open_qty: int
+
+
+@dataclass(frozen=True)
 class SendResult:
     """What came back from one draft-PO request. `error` is "timeout", "connection" (the request
     may or may not have reached the ERP) or "not_sent" (the token file couldn't be read, so
@@ -216,6 +226,30 @@ class CanonicalClient:
     def supplier(self, supplier_id: str) -> Supplier:
         d = self._get(f"/suppliers/{supplier_id}")
         return Supplier(d["supplier_id"], d["name"], d["lead_time_days"])
+
+    def open_purchase_order_list(self, product_id: str) -> list[OpenOrder]:
+        """Every open order holding `product_id`, all pages: the same GET as
+        open_purchase_orders, kept per order (feature 005, get_open_purchase_orders)."""
+        orders: list[OpenOrder] = []
+        cursor: str | None = None
+        while True:
+            params: dict[str, Any] = {"status": "open", "product_id": product_id, "limit": 500}
+            if cursor is not None:
+                params["cursor"] = cursor
+            body = self._get("/purchase-orders", params)
+            for order in body["items"]:
+                qty = sum(
+                    line["open_qty"] for line in order["lines"] if line["product_id"] == product_id
+                )
+                if qty:
+                    orders.append(
+                        OpenOrder(
+                            order["purchase_order_id"], order["supplier_id"], order["status"], qty
+                        )
+                    )
+            cursor = body["next_cursor"]
+            if cursor is None:
+                return orders
 
     def open_purchase_orders(self, product_id: str) -> int:
         """Total open quantity of `product_id` across all open (draft) orders, all pages."""

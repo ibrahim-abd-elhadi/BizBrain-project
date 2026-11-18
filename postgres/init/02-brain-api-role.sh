@@ -1,12 +1,13 @@
 #!/bin/sh
 # brain-api's login inside brain_db (feature 003 research R-16, D-45; feature 004 R-04): it reads
-# eight result tables and writes only the four proposal tables.
+# nine result tables (feature 005 adds briefing) and writes only the four proposal tables and,
+# since feature 005, inserts into explanation.
 #
 # Idempotent: runs by itself on a fresh volume (after 01-create-databases.sh), and can be run
 # again at any time on an existing volume:
 #   docker compose exec -T postgres sh /docker-entrypoint-initdb.d/02-brain-api-role.sh
 # It creates or updates the login (password from BRAIN_API_DB_PASSWORD), allows it to connect to
-# brain_db only, and grants SELECT on the eight read tables that already exist. The Brain's
+# brain_db only, and grants SELECT on the read tables that already exist. The Brain's
 # migrations grant the same list (brain/src/brain/grants.py), so whichever runs last, the result
 # is the same. Credentials come from the environment, never from code.
 #
@@ -32,14 +33,17 @@ REVOKE ALL ON ALL TABLES IN SCHEMA public FROM :"api_user";
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM :"api_user";
 SELECT format('GRANT SELECT ON TABLE %I TO %I', t, :'api_user')
 FROM unnest(ARRAY['risk_result', 'forecast', 'model_choice', 'model_health',
-                  'anomaly', 'product_ref', 'sales_daily', 'job_run']) AS t
+                  'anomaly', 'product_ref', 'sales_daily', 'job_run',
+                  'briefing']) AS t
 WHERE to_regclass(format('public.%I', t)) IS NOT NULL \gexec
--- Feature 004: writes on the proposal tables only (same list as brain/src/brain/grants.py).
+-- Feature 004: writes on the proposal tables; feature 005: inserts into explanation (same
+-- list as brain/src/brain/grants.py).
 SELECT format('GRANT %s ON TABLE %I TO %I', p, t, :'api_user')
 FROM (VALUES ('proposal', 'SELECT, INSERT, UPDATE'),
              ('proposal_line', 'SELECT, INSERT'),
              ('proposal_live_product', 'SELECT, INSERT, DELETE'),
-             ('proposal_attempt', 'SELECT, INSERT, UPDATE')) AS w(t, p)
+             ('proposal_attempt', 'SELECT, INSERT, UPDATE'),
+             ('explanation', 'SELECT, INSERT')) AS w(t, p)
 WHERE to_regclass(format('public.%I', t)) IS NOT NULL \gexec
 SELECT format('brain_api role %s: SELECT on %s', :'api_user',
               coalesce(string_agg(table_name, ', ' ORDER BY table_name), 'no tables yet'))

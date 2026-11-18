@@ -67,8 +67,15 @@ services:
       BRAIN_API_DB_USER: ${BRAIN_API_DB_USER}
       BRAIN_ERP_BASE_URL: http://erp-backend:8000
       BRAIN_ERP_SERVICE_TOKEN_FILE: /run/secrets/brain_service_token
+      # The assistant (feature 005, research R-11): the Gemini key is a file, never a variable.
+      BRAIN_GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+      BRAIN_GEMINI_MODEL: ${BRAIN_GEMINI_MODEL:-gemini-3.5-flash-lite}
+      BRAIN_GEMINI_BASE_URL: ${BRAIN_GEMINI_BASE_URL:-}
+      BRAIN_GEMINI_THINKING_LEVEL: ${BRAIN_GEMINI_THINKING_LEVEL:-low}
+      LANGSMITH_TRACING: "false"
     volumes:
       - ./secrets/brain_service_token:/run/secrets/brain_service_token:ro
+      - ./secrets/gemini_api_key:/run/secrets/gemini_api_key:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,9 +97,16 @@ services:
       # Approvals send the draft PO with the Brain's service token (feature 004, research R-10).
       BRAIN_ERP_BASE_URL: http://erp-backend:8000
       BRAIN_ERP_SERVICE_TOKEN_FILE: /run/secrets/brain_service_token
+      # The assistant (feature 005, research R-11): the Gemini key is a file, never a variable.
+      BRAIN_GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+      BRAIN_GEMINI_MODEL: ${BRAIN_GEMINI_MODEL:-gemini-3.5-flash-lite}
+      BRAIN_GEMINI_BASE_URL: ${BRAIN_GEMINI_BASE_URL:-}
+      BRAIN_GEMINI_THINKING_LEVEL: ${BRAIN_GEMINI_THINKING_LEVEL:-low}
+      LANGSMITH_TRACING: "false"
     volumes:
       - ./secrets/erp_jwt_ed25519.pub.pem:/run/erp-keys/erp_jwt_ed25519.pub.pem:ro
       - ./secrets/brain_service_token:/run/secrets/brain_service_token:ro
+      - ./secrets/gemini_api_key:/run/secrets/gemini_api_key:ro
     depends_on:
       brain-worker:
         condition: service_healthy

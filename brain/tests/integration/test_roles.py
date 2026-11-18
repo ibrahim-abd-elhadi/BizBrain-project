@@ -30,6 +30,7 @@ READ = {
     "product_ref",
     "sales_daily",
     "job_run",
+    "briefing",  # feature 005: the Briefing screen only reads
 }
 HIDDEN = {"poll_state", "model_artifact", "forecast_evaluation", "anomaly_scan_progress"}
 # Feature 004: brain_api writes only the proposal tables (research R-04).
@@ -38,6 +39,7 @@ WRITES = {
     "proposal_line": {"SELECT", "INSERT"},
     "proposal_live_product": {"SELECT", "INSERT", "DELETE"},
     "proposal_attempt": {"SELECT", "INSERT", "UPDATE"},
+    "explanation": {"SELECT", "INSERT"},  # feature 005: Why? fills its cache once
 }
 SELECTABLE = READ | set(WRITES)
 SCRIPT = "/docker-entrypoint-initdb.d/02-brain-api-role.sh"
@@ -110,8 +112,9 @@ def test_the_api_login_cannot_touch_the_proposal_rules(
         conn.execute(statement)
 
 
-def test_migrations_create_twelve_then_four_tables(pg: PostgresContainer) -> None:
-    """0001 creates only feature 003's twelve tables; 0002 adds the four proposal tables."""
+def test_migrations_create_twelve_then_four_then_two_tables(pg: PostgresContainer) -> None:
+    """0001 creates only feature 003's twelve tables; 0002 adds the four proposal tables; 0003
+    adds briefing and explanation (feature 005)."""
 
     def tables() -> set[str]:
         with connect(pg, LOGINS["BRAIN_DB_USER"], LOGINS["BRAIN_DB_PASSWORD"], "brain_db") as conn:
@@ -120,8 +123,10 @@ def test_migrations_create_twelve_then_four_tables(pg: PostgresContainer) -> Non
             ).fetchall()
         return {r[0] for r in rows}
 
-    command.downgrade(alembic_config(), "0001")
+    command.downgrade(alembic_config(), "0002")
     try:
+        assert len(tables()) == 16 and not tables() & {"briefing", "explanation"}
+        command.downgrade(alembic_config(), "0001")
         assert len(tables()) == 12 and not tables() & set(WRITES)
     finally:
         command.upgrade(alembic_config(), "head")
@@ -213,7 +218,7 @@ def test_the_script_and_the_code_grant_the_same_writes() -> None:
     from brain.grants import API_WRITE_GRANTS
 
     script = (INIT_DIR / "02-brain-api-role.sh").read_text(encoding="utf-8")
-    pairs = re.findall(r"\('(proposal[a-z_]*)', '([A-Z, ]+)'\)", script)
+    pairs = re.findall(r"\('([a-z_]+)', '([A-Z, ]+)'\)", script)
     from_script = {table: {p.strip() for p in privileges.split(",")} for table, privileges in pairs}
     from_code = {table: set(privileges) for table, privileges in API_WRITE_GRANTS.items()}
     assert from_script == from_code == WRITES

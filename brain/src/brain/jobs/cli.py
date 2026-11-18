@@ -1,5 +1,6 @@
-"""`brain-worker`: serve | run <job> | reset [--yes] | healthcheck
+"""`brain-worker`: serve | run <job> | reset [--yes] | healthcheck | eval-assistant
 (contracts/brain-worker-cli.md). There is no other way to start a job, and no screen button (D-38).
+`eval-assistant` (feature 005) is not a job: it runs the evaluation set and writes a report.
 """
 
 import argparse
@@ -64,6 +65,16 @@ def main(argv: list[str] | None = None) -> int:
     commands.add_parser(
         "healthcheck", help="exit 0 if the database answers and migrations are at head"
     )
+    evaluate = commands.add_parser(
+        "eval-assistant", help="run the assistant's evaluation set and write a dated report"
+    )
+    evaluate.add_argument("--out", default="./eval-reports", help="the report folder")
+    evaluate.add_argument(
+        "--only", default="", help="question IDs, comma separated (E01,A08), or en / ar"
+    )
+    evaluate.add_argument(
+        "--merge", nargs="+", metavar="REPORT_JSON", help="combine partial reports into one"
+    )
     args = parser.parse_args(argv)
 
     if args.command == "serve":
@@ -74,7 +85,21 @@ def main(argv: list[str] | None = None) -> int:
         return registry.run_job(args.job, trigger="manual")
     if args.command == "reset":
         return _reset(args.yes)
+    if args.command == "eval-assistant":
+        return _evaluate(
+            args.out, [q.strip() for q in args.only.split(",") if q.strip()], args.merge
+        )
     return _healthcheck()
+
+
+def _evaluate(out: str, only: list[str], merge: list[str] | None = None) -> int:
+    from brain.assistant import evaluation
+
+    try:
+        return evaluation.main(out, only or None, merge)
+    except Exception as exc:  # noqa: BLE001  (a report problem, not a job failure)
+        print(f"eval-assistant failed: {type(exc).__name__}", flush=True)
+        return 1
 
 
 if __name__ == "__main__":

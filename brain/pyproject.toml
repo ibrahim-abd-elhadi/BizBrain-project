@@ -23,6 +23,15 @@ dependencies = [
     "numpy==2.5.5",
     "scipy==1.18.1",
     "APScheduler==3.11.3",
+    # Feature 005 (approved L-1, L-1a, L-2): the agent (README 6) and the Gemini client (README 8).
+    "langgraph==1.2.19",
+    # LangGraph's own dependencies, pinned so pip never picks a days-old release (L-1a). The
+    # Brain doesn't import them.
+    "langchain-core==1.7.3",
+    "langgraph-checkpoint==4.3.1",
+    "langgraph-prebuilt==1.1.1",
+    "langgraph-sdk==0.4.11",
+    "google-genai==2.34.0",
 ]
 
 [project.optional-dependencies]
@@ -49,7 +58,14 @@ target-version = "py312"
 
 [tool.ruff.lint.isort]
 # tests/ is on sys.path (it holds conftest.py), so its helper modules import as local ones.
-known-local-folder = ["fakes", "series", "canonical_schemas"]
+known-local-folder = [
+    "fakes",
+    "series",
+    "canonical_schemas",
+    "fake_gemini",
+    "scripted_model",
+    "evalset_scripts",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

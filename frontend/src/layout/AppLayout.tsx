@@ -7,6 +7,8 @@ import {
   LineChartOutlined,
   LogoutOutlined,
   MedicineBoxOutlined,
+  MessageOutlined,
+  ReadOutlined,
   ShopOutlined,
   UserOutlined,
 } from "@ant-design/icons";
@@ -24,10 +26,12 @@ const LINKS = [
   { to: "/purchase-orders", label: "Purchase orders", icon: <FileTextOutlined aria-hidden /> },
 ];
 
-/** The Brain's read-only screens (feature 003). */
+/** The Brain's screens (features 003-005), in README Section 5's order. */
 const BRAIN_LINKS = [
   { to: "/brain/risk", label: "Risk and insights", icon: <AlertOutlined aria-hidden /> },
   { to: "/brain/forecasts", label: "Forecasts", icon: <FundOutlined aria-hidden /> },
+  { to: "/brain/briefing", label: "Briefing", icon: <ReadOutlined aria-hidden /> },
+  { to: "/brain/assistant", label: "Assistant", icon: <MessageOutlined aria-hidden /> },
   { to: "/brain/proposals", label: "Proposals", icon: <AuditOutlined aria-hidden /> },
 ];
 

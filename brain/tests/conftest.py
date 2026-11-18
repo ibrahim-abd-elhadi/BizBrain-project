@@ -261,3 +261,88 @@ def first_night(fake_erp):
 
     assert run_job("end-of-day", trigger="manual") == 0
     return fake_erp
+
+
+# ---------------------------------------------------------------- the assistant (feature 005)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_assistant_state() -> Iterator[None]:
+    """The availability state and the key cache live in the process; every test starts clean."""
+
+    def reset() -> None:
+        try:
+            from brain.assistant import availability, model
+        except ImportError:  # before the assistant package exists (tests written first)
+            return
+        availability.reset()
+        model.clear_key_cache()
+
+    reset()
+    yield
+    reset()
+
+
+class FakeMonotonic:
+    """Stands in for brain.clock.monotonic: deadlines and caches move only when told to."""
+
+    def __init__(self, start: float = 1000.0) -> None:
+        self.now = start
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
+
+@pytest.fixture
+def fake_clock(monkeypatch: pytest.MonkeyPatch) -> FakeMonotonic:
+    clock = FakeMonotonic()
+    monkeypatch.setattr("brain.clock.monotonic", clock)
+    return clock
+
+
+@pytest.fixture
+def fake_gemini() -> Iterator["FakeGemini"]:  # noqa: F821
+    from fake_gemini import FakeGemini
+
+    server = FakeGemini()
+    try:
+        yield server
+    finally:
+        server.close()
+
+
+@pytest.fixture
+def gemini_key_file(tmp_path: Path) -> Path:
+    from fake_gemini import CANARY_KEY
+
+    path = tmp_path / "gemini_api_key"
+    path.write_text(CANARY_KEY, encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def gemini_env(fake_gemini, gemini_key_file, monkeypatch: pytest.MonkeyPatch):
+    """The real adapter pointed at the fake Gemini server with the canary key."""
+    monkeypatch.setenv("BRAIN_GEMINI_BASE_URL", fake_gemini.url)
+    monkeypatch.setenv("BRAIN_GEMINI_API_KEY_FILE", str(gemini_key_file))
+    reset_app_caches()
+    yield fake_gemini
+    monkeypatch.undo()
+    reset_app_caches()
+
+
+@pytest.fixture
+def scripted(monkeypatch: pytest.MonkeyPatch, fake_clock):
+    """scripted(*steps) -> a ScriptedModel the API, the worker and the CLI get from
+    brain.assistant.model.model_from_settings()."""
+    from scripted_model import ScriptedModel
+
+    def _install(*steps):
+        stand_in = ScriptedModel(*steps, clock=fake_clock)
+        monkeypatch.setattr("brain.assistant.model.model_from_settings", lambda: stand_in)
+        return stand_in
+
+    return _install

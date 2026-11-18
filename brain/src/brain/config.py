@@ -68,6 +68,47 @@ class Settings(BaseSettings):
     lgbm_num_boost_round: int = Field(default=300, ge=1)
     lgbm_seed: int = 20261202
 
+    # The assistant (feature 005, research R-14). The key is a file, never a variable (R-11).
+    # Default changed 2026-11-18 (research R-05): fastest in the live checks, right tool choice.
+    gemini_model: str = "gemini-3.5-flash-lite"
+    gemini_api_key_file: Path = Path("/run/secrets/gemini_api_key")
+    gemini_base_url: str | None = None  # empty: Google's endpoint (the demo's offline switch)
+    gemini_temperature: float = Field(default=0.0, ge=0, le=2)
+    # How much the model "thinks" before answering (google-genai ThinkingConfig): minimal, low,
+    # medium or high; empty sends none (the model's default). Lower is faster.
+    gemini_thinking_level: str | None = "low"
+    gemini_connect_timeout_seconds: float = Field(default=3.0, gt=0)
+    gemini_key_cache_seconds: float = Field(default=60.0, ge=0)
+    chat_call_timeout_seconds: float = Field(default=10.0, gt=0)
+    chat_turn_deadline_seconds: float = Field(default=14.0, gt=0)
+    chat_max_tool_rounds: int = Field(default=4, ge=1)
+    chat_max_tool_calls: int = Field(default=8, ge=1)
+    chat_max_messages: int = Field(default=20, ge=1)
+    chat_max_message_chars: int = Field(default=2000, ge=1)
+    explanation_timeout_seconds: float = Field(default=8.0, gt=0)
+    explanation_deadline_seconds: float = Field(default=9.0, gt=0)
+    explanation_connect_timeout_seconds: float = Field(default=1.5, gt=0)
+    explanation_retry_min_seconds: float = Field(default=3.0, ge=0)
+    briefing_timeout_seconds: float = Field(default=45.0, gt=0)
+    availability_probe_timeout_seconds: float = Field(default=3.0, gt=0)
+    availability_cache_seconds: float = Field(default=30.0, ge=0)
+    # After a real call gets 429 or a 5xx, GET /assistant says offline this long without probing
+    # (models.get still answers when the quota is spent); "Check again" re-probes at once.
+    availability_offline_seconds: float = Field(default=30.0, ge=0)
+    why_offline_memory_seconds: float = Field(default=30.0, ge=0)
+    briefing_top_forecasts: int = Field(default=3, ge=1)
+    briefing_forecast_days: int = Field(default=7, ge=1, le=14)
+
+    @field_validator("gemini_thinking_level")
+    @classmethod
+    def _thinking_level(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        value = value.strip().lower()
+        if value not in ("minimal", "low", "medium", "high"):
+            raise ValueError("must be minimal, low, medium, high or empty")
+        return value
+
     @field_validator("end_of_day_time")
     @classmethod
     def _hh_mm(cls, value: str) -> str:
@@ -82,6 +123,16 @@ class Settings(BaseSettings):
             raise ValueError("range_low_quantile must be below range_high_quantile")
         if self.live_wape_min_days > self.live_wape_max_days:
             raise ValueError("live_wape_min_days must not exceed live_wape_max_days")
+        if self.chat_call_timeout_seconds > self.chat_turn_deadline_seconds:
+            raise ValueError("chat_call_timeout_seconds must not exceed chat_turn_deadline_seconds")
+        if self.explanation_timeout_seconds > self.explanation_deadline_seconds:
+            raise ValueError(
+                "explanation_timeout_seconds must not exceed explanation_deadline_seconds"
+            )
+        if self.gemini_connect_timeout_seconds > self.chat_call_timeout_seconds:
+            raise ValueError("gemini_connect_timeout_seconds must not exceed the call timeout")
+        if self.explanation_connect_timeout_seconds > self.explanation_timeout_seconds:
+            raise ValueError("explanation_connect_timeout_seconds must not exceed its call timeout")
         return self
 
     @property

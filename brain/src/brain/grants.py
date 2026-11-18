@@ -1,5 +1,5 @@
 """What brain-api's login may read and write (D-45; feature 003 research R-16, P-7; feature 004
-research R-04).
+research R-04; feature 005 data-model.md).
 
 The same lists are applied by the Brain's migrations (here) and by the idempotent
 postgres/init/02-brain-api-role.sh; tests check the two never differ.
@@ -16,6 +16,7 @@ API_READ_TABLES: tuple[str, ...] = (
     "product_ref",
     "sales_daily",
     "job_run",
+    "briefing",  # feature 005: the Briefing screen only reads
 )
 
 # Feature 004: brain-api writes only the proposal tables. No DELETE on proposal, proposal_line or
@@ -25,6 +26,8 @@ API_WRITE_GRANTS: dict[str, tuple[str, ...]] = {
     "proposal_line": ("SELECT", "INSERT"),
     "proposal_live_product": ("SELECT", "INSERT", "DELETE"),
     "proposal_attempt": ("SELECT", "INSERT", "UPDATE"),
+    # Feature 005: Why? fills its cache once; a kept explanation never changes.
+    "explanation": ("SELECT", "INSERT"),
 }
 
 
@@ -50,7 +53,8 @@ def apply_api_grants(connection: Connection, role: str) -> None:
     connection.execute(text(f"REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {who}"))
     connection.execute(text(f"REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {who}"))
     for table in API_READ_TABLES:
-        connection.execute(text(f"GRANT SELECT ON TABLE {quote(table)} TO {who}"))
+        if _exists(connection, table):
+            connection.execute(text(f"GRANT SELECT ON TABLE {quote(table)} TO {who}"))
     for table, privileges in API_WRITE_GRANTS.items():
         if _exists(connection, table):
             connection.execute(

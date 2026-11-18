@@ -4,6 +4,8 @@ Base.metadata (Alembic and `brain-worker reset` rely on it)."""
 from brain.models.anomaly import Anomaly
 from brain.models.anomaly_scan_progress import AnomalyScanProgress
 from brain.models.base import Base
+from brain.models.briefing import Briefing
+from brain.models.explanation import Explanation
 from brain.models.forecast import Forecast
 from brain.models.forecast_evaluation import ForecastEvaluation
 from brain.models.job_run import JobRun
@@ -23,6 +25,8 @@ __all__ = [
     "Anomaly",
     "AnomalyScanProgress",
     "Base",
+    "Briefing",
+    "Explanation",
     "Forecast",
     "ForecastEvaluation",
     "JobRun",

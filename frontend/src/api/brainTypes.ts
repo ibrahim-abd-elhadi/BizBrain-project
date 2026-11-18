@@ -136,3 +136,85 @@ export interface ProposalDetail extends Proposal {
   failure: { code: string; reason: string } | null;
   attempts: ProposalAttempt[];
 }
+
+// ---- Feature 005: the assistant, the briefing and Why? (contracts/brain-api-assistant.openapi.yaml)
+
+export type Language = "en" | "ar";
+export type OfflineReason =
+  | "no_key"
+  | "unreachable"
+  | "timeout"
+  | "key_refused"
+  | "model_not_found"
+  | "rate_limited"
+  | "server_error"
+  | "refused";
+
+export interface Availability {
+  synthetic: true;
+  available: boolean;
+  reason: OfflineReason | null;
+}
+
+export interface ChatMessage {
+  role: "manager" | "assistant";
+  text: string;
+  language?: Language;
+}
+
+export interface ChatRequest {
+  messages: ChatMessage[];
+}
+
+export interface ChatProposal {
+  id: string;
+  path: string;
+  status: "awaiting_approval";
+  origin: "assistant";
+  supplier_id: string;
+  supplier_name: string;
+  lines: { product_id: string; product_name: string; quantity: number }[];
+}
+
+export type ChatRefusalCode =
+  | "PROPOSAL_PENDING"
+  | "VALIDATION_ERROR"
+  | "QUANTITY_NOT_GIVEN"
+  | "NO_RECOMMENDED_QUANTITY"
+  | "NO_RESULTS"
+  | "UNKNOWN_PRODUCT"
+  | "DIFFERENT_SUPPLIERS";
+
+export interface ChatRefusal {
+  code: ChatRefusalCode;
+  detail: string;
+  live_proposal_id: string | null;
+  path: string | null;
+}
+
+export interface ChatReply {
+  synthetic: true;
+  outcome: "answered" | "not_grounded" | "offline";
+  offline_reason?: OfflineReason | null;
+  reply: { text: string; language: Language } | null;
+  proposal: ChatProposal | null;
+  refusal: ChatRefusal | null;
+}
+
+export interface Briefing {
+  synthetic: true;
+  state: "none" | "offline" | "written";
+  night: string | null;
+  run_finished_at: string | null;
+  text_en: string | null;
+  text_ar: string | null;
+}
+
+export interface Explanation {
+  synthetic: true;
+  recommendation_id: string;
+  product_id: string;
+  language: Language;
+  source: "assistant" | "template";
+  text: string;
+}

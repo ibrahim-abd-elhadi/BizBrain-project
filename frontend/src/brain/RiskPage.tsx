@@ -9,6 +9,7 @@ import { ErrorAlert } from "../components/ErrorAlert";
 import { PageHeader } from "../components/PageHeader";
 import { byNumber, byText, pagination } from "../components/table";
 import { AnomalyLabel, REASON_TEXT, RiskTag, SyntheticTag, cairoTime, days, riskLabel } from "./shared";
+import { WhyDrawer } from "./WhyDrawer";
 
 const LEVEL_ORDER = { high: 0, medium: 1, low: 2 } as const;
 const dash = <Typography.Text type="secondary">—</Typography.Text>;
@@ -116,6 +117,7 @@ export function RiskPage() {
   const navigate = useNavigate();
   const [creating, setCreating] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [why, setWhy] = useState<RiskRow | null>(null);
 
   async function createProposal(row: RiskRow) {
     setCreating(row.product_id);
@@ -142,8 +144,16 @@ export function RiskPage() {
     {
       title: "Action",
       key: "action",
-      width: 150,
-      render: (_, r) => <ActionCell row={r} busy={creating === r.product_id} onCreate={(x) => void createProposal(x)} />,
+      width: 220,
+      render: (_, r) => (
+        <Space size={8} wrap={false}>
+          <ActionCell row={r} busy={creating === r.product_id} onCreate={(x) => void createProposal(x)} />
+          {/* Feature 005: the risk level and the order, explained (US4). */}
+          <Button size="small" onClick={() => setWhy(r)}>
+            Why?
+          </Button>
+        </Space>
+      ),
     },
     ...baseColumns.slice(afterOrder),
   ];
@@ -176,10 +186,11 @@ export function RiskPage() {
             dataSource={body?.items ?? []}
             loading={risk.loading}
             pagination={pagination}
-            scroll={{ x: 1465 }}
+            scroll={{ x: 1535 }}
           />
         )}
       </Card>
+      <WhyDrawer row={why} onClose={() => setWhy(null)} />
     </div>
   );
 }

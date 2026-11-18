@@ -39,6 +39,10 @@ def days_of_cover(available: float, forecast: list[float]) -> float | None:
     return days + stock / (sum(forecast) / len(forecast))
 
 
+# README 4.3: "medium if days of cover < lead time + 2" (feature 005's Why? states it too).
+MEDIUM_MARGIN_DAYS = 2
+
+
 def risk_level(cover: float | None, lead: int | None) -> str | None:
     """FR-022: high if cover < lead, medium if cover < lead + 2, else low. No lead time, no level;
     unlimited cover is low."""
@@ -48,7 +52,7 @@ def risk_level(cover: float | None, lead: int | None) -> str | None:
         return "low"
     if cover < lead:
         return "high"
-    if cover < lead + 2:
+    if cover < lead + MEDIUM_MARGIN_DAYS:
         return "medium"
     return "low"
 

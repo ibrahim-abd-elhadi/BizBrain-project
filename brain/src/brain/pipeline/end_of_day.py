@@ -6,6 +6,7 @@ recommendation for every product (User Story 3). All results are written in one 
 the screens never see half a night.
 """
 
+import logging
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -34,6 +35,7 @@ from brain.models import Anomaly, Forecast, ModelChoice
 from brain.pipeline import risk_step
 
 FOUR = Decimal("0.0001")
+log = logging.getLogger("brain.jobs")
 
 
 def _dec(value: float | None) -> Decimal | None:
@@ -229,7 +231,22 @@ def run_end_of_day(run: RunContext) -> dict[str, Any]:
     with worker_session() as session:
         end, series = load_series(session, today)
         if end is None:
-            return {**summary, "products": 0}
+            return {**summary, "products": 0, "briefing": "none"}
         summary.update(forecast_night(session, run.run_id, end, series, settings))
         session.commit()
+    # Feature 005: the morning briefing, after the night's results are committed (R-10).
+    summary["briefing"] = _briefing(run.run_id, summary.get("final_cut"), settings)
     return summary
+
+
+def _briefing(run_id: int, night: str | None, settings: Settings) -> str:
+    """Never fails the run: any error leaves that night "Assistant offline" (FR-011, FR-012)."""
+    from brain.assistant import briefing
+    from brain.assistant import model as llm
+
+    try:
+        return briefing.write_briefing(run_id, settings, llm.model_from_settings(), night)
+    except Exception:  # noqa: BLE001  (the night's results are already committed)
+        log.warning("briefing step failed; that night shows Assistant offline")
+        briefing.record_failure(run_id, night or today_cairo().isoformat())
+        return "offline:error"

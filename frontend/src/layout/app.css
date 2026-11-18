@@ -201,3 +201,58 @@ body {
   font-size: 13px;
   word-spacing: 2px;
 }
+
+/* The assistant (feature 005): generated Arabic text is shown right to left inside the English
+   screen (FR-001a); each block carries its own dir and lang. */
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-block-size: 60vh;
+  overflow-y: auto;
+}
+
+.chat-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-inline-size: 80%;
+}
+
+.chat-manager {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chat-assistant {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.chat-bubble {
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  background: var(--ant-color-fill-tertiary, #f0f0f0);
+}
+
+.chat-manager .chat-bubble {
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+.chat-card {
+  min-inline-size: 280px;
+}
+
+.chat-input {
+  inline-size: 100%;
+}
+
+.generated-text {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.full-width {
+  inline-size: 100%;
+}

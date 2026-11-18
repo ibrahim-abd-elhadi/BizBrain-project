@@ -78,9 +78,9 @@ def test_the_client_only_sends_the_five_canonical_gets_and_the_draft_po() -> Non
     assert paths == CANONICAL_PATHS
 
 
-def test_the_api_writes_only_the_four_proposal_actions(manager_keys, monkeypatch) -> None:
-    """Every route is a GET except the four proposal POSTs (feature 004): create, approve,
-    reject, send-again. None of them runs a job (D-38)."""
+def test_the_api_writes_only_the_proposal_actions_and_the_chat(manager_keys, monkeypatch) -> None:
+    """Every route is a GET except the four proposal POSTs (feature 004: create, approve, reject,
+    send-again) and the chat turn (feature 005). None of them runs a job (D-38)."""
     from conftest import reset_app_caches
 
     monkeypatch.setenv("BRAIN_ERP_JWT_PUBLIC_KEY_FILE", str(manager_keys[1]))
@@ -101,6 +101,7 @@ def test_the_api_writes_only_the_four_proposal_actions(manager_keys, monkeypatch
         (prefix + "/{proposal_id}/approve", "POST"),
         (prefix + "/{proposal_id}/reject", "POST"),
         (prefix + "/{proposal_id}/send-again", "POST"),
+        ("/api/v1/brain/assistant/messages", "POST"),
     }, writes
     reset_app_caches()
 
@@ -149,3 +150,80 @@ def test_proposals_never_expire() -> None:
     for folder in ("jobs", "pipeline", "forecasting", "sales"):
         for path in (SRC / folder).rglob("*.py"):
             assert "Proposal" not in path.read_text(encoding="utf-8"), path
+
+
+# ---------------------------------------------------------------- feature 005 (T012)
+
+LLM_PREFIX = re.compile(r"^(langgraph|langchain\w*)\b")
+GENAI = re.compile(r"^google\.genai\b|^google$")
+
+
+def _all_imports() -> dict[str, set[str]]:
+    return {path.relative_to(SRC).as_posix(): _imports(path) for path in SRC.rglob("*.py")}
+
+
+def test_langgraph_and_langchain_only_under_assistant() -> None:
+    for name, imported in _all_imports().items():
+        if not name.startswith("assistant/"):
+            assert not [m for m in imported if LLM_PREFIX.match(m)], name
+
+
+def test_google_genai_only_in_the_adapter() -> None:
+    for name, imported in _all_imports().items():
+        if name != "assistant/model.py":
+            assert not [m for m in imported if GENAI.match(m)], name
+
+
+def test_nothing_imports_langsmith() -> None:
+    for name, imported in _all_imports().items():
+        assert not [m for m in imported if m.split(".")[0] == "langsmith"], name
+
+
+def test_compose_turns_tracing_off_and_never_passes_a_key_variable() -> None:
+    import yaml
+
+    compose = yaml.safe_load((SRC.parents[2] / "docker-compose.yml").read_text(encoding="utf-8"))
+    for service in ("brain-worker", "brain-api"):
+        env = compose["services"][service]["environment"]
+        assert str(env["LANGSMITH_TRACING"]).lower() == "false", service
+        assert env["BRAIN_GEMINI_API_KEY_FILE"] == "/run/secrets/gemini_api_key", service
+        for banned in ("GOOGLE_API_KEY", "GEMINI_API_KEY", "LANGCHAIN_TRACING_V2"):
+            assert banned not in env, (service, banned)
+        mounts = compose["services"][service]["volumes"]
+        assert "./secrets/gemini_api_key:/run/secrets/gemini_api_key:ro" in mounts, service
+
+
+def test_no_code_sets_a_key_environment_variable() -> None:
+    for path in SRC.rglob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        for name in ("GOOGLE_API_KEY", "GEMINI_API_KEY"):
+            assert name not in source, (path, name)
+        assert "os.environ[" not in source or "LANGSMITH" not in source, path
+
+
+def test_no_model_id_literal_outside_the_settings() -> None:
+    for path in SRC.rglob("*.py"):
+        if path.name == "config.py":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        literals = [
+            node.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        ]
+        assert not [s for s in literals if re.search(r"\bgemini-\d", s)], path
+
+
+def test_the_assistant_only_creates_proposals() -> None:
+    """Principle V: the propose tool uses feature 004's create function and never execution."""
+    callers = [
+        path.relative_to(SRC).as_posix()
+        for path in SRC.rglob("*.py")
+        if "create_draft_purchase_order(" in path.read_text(encoding="utf-8")
+        and path.name != "client.py"
+    ]
+    assert callers == ["proposals/execution.py"]
+    for path in (SRC / "assistant").glob("*.py"):
+        imported = _imports(path)
+        assert "brain.proposals.execution" not in imported, path
+    assert "brain.proposals.service" in _imports(SRC / "assistant" / "propose.py")

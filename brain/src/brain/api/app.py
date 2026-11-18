@@ -1,4 +1,4 @@
-"""brain-api: read-only endpoints for the Brain screens (feature 003; research R-17).
+"""brain-api: the Brain screens' endpoints (features 003-005; feature 003 research R-17).
 
 `create_app()` loads the ERP's public key first and refuses to start without it. The module's
 `app` (what uvicorn serves, `brain.api.app:app`) is built on first access, so importing this
@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from brain.api import forecasts, proposals, risk
+from brain.api import assistant, briefing, explanations, forecasts, proposals, risk
 from brain.api.auth import load_public_key
 from brain.api.errors import register_error_handlers
 from brain.config import get_settings
@@ -31,6 +31,9 @@ def create_app() -> FastAPI:
     app.include_router(risk.router)
     app.include_router(forecasts.router)
     app.include_router(proposals.router)
+    app.include_router(assistant.router)  # feature 005
+    app.include_router(briefing.router)
+    app.include_router(explanations.router)
     return app
 
 

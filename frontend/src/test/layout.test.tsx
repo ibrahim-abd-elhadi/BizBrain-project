@@ -84,6 +84,8 @@ describe("layout", () => {
       "Purchase orders",
       "Risk and insights",
       "Forecasts",
+      "Briefing",
+      "Assistant",
       "Proposals",
     ]);
     // The ERP screens and the Brain's read-only screens are two labelled groups.
