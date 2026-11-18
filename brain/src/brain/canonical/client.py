@@ -1,4 +1,5 @@
-"""The Brain's only way into ERP data: the five Canonical GETs of README Section 3 (research R-02).
+"""The Brain's only way into ERP data: the five Canonical GETs of README Section 3 (research R-02),
+and its only business write, the approved draft purchase order (feature 004, research R-10).
 
 The service token is read from its file when a client is created (once per job run), so a newly
 issued token is picked up without a restart. Neither the token nor the Authorization header is
@@ -6,6 +7,7 @@ ever logged or put into an error message (FR-001). There are no retries inside a
 schedule is the retry.
 """
 
+import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -73,6 +75,17 @@ class Supplier:
     lead_time_days: int | None
 
 
+@dataclass(frozen=True)
+class SendResult:
+    """What came back from one draft-PO request. `error` is "timeout", "connection" (the request
+    may or may not have reached the ERP) or "not_sent" (the token file couldn't be read, so
+    nothing was sent). `body` is the parsed JSON, or None when the answer wasn't JSON."""
+
+    status: int | None = None
+    body: Any = None
+    error: str | None = None
+
+
 def _instant(text: str) -> datetime:
     return datetime.fromisoformat(text)
 
@@ -113,6 +126,25 @@ class CanonicalClient:
 
     def close(self) -> None:
         self._http.close()
+
+    def create_draft_purchase_order(self, key: uuid.UUID | str, body: bytes) -> SendResult:
+        """POST the given bytes unchanged (FR-016), with Idempotency-Key = the proposal UUID. One
+        attempt; HTTP errors are returned, not raised (research R-07). Headers are never logged."""
+        try:
+            response = self._http.post(
+                "/purchase-orders",
+                content=body,
+                headers={"Content-Type": "application/json", "Idempotency-Key": str(key)},
+            )
+        except httpx.TimeoutException:
+            return SendResult(error="timeout")
+        except httpx.HTTPError:
+            return SendResult(error="connection")
+        try:
+            parsed: Any = response.json()
+        except ValueError:
+            parsed = None
+        return SendResult(status=response.status_code, body=parsed)
 
     def __enter__(self) -> Self:
         return self

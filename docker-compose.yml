@@ -87,11 +87,17 @@ services:
     environment:
       BRAIN_API_DATABASE_URL: postgresql+psycopg://${BRAIN_API_DB_USER}:${BRAIN_API_DB_PASSWORD}@postgres:5432/brain_db
       BRAIN_ERP_JWT_PUBLIC_KEY_FILE: /run/erp-keys/erp_jwt_ed25519.pub.pem
+      # Approvals send the draft PO with the Brain's service token (feature 004, research R-10).
+      BRAIN_ERP_BASE_URL: http://erp-backend:8000
+      BRAIN_ERP_SERVICE_TOKEN_FILE: /run/secrets/brain_service_token
     volumes:
       - ./secrets/erp_jwt_ed25519.pub.pem:/run/erp-keys/erp_jwt_ed25519.pub.pem:ro
+      - ./secrets/brain_service_token:/run/secrets/brain_service_token:ro
     depends_on:
       brain-worker:
         condition: service_healthy
+      erp-backend:
+        condition: service_started
 
 volumes:
   pgdata:

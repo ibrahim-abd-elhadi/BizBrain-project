@@ -20,7 +20,9 @@ function stubApi() {
     vi.fn(async (url: string) =>
       url === "/api/v1/erp/auth/me"
         ? json({ username: "manager" })
-        : url === "/api/v1/brain/risk"
+        : url === "/api/v1/brain/proposals"
+          ? json({ synthetic: true, items: [] })
+          : url === "/api/v1/brain/risk"
           ? json({ synthetic: true, results_exist: false, last_end_of_day: null, items: [] })
           : json(url.startsWith("/api/v1/erp/sales") ? { today: "2026-11-18", items: [] } : []),
     ),
@@ -36,6 +38,7 @@ const ROUTES = [
   "/purchase-orders",
   "/brain/risk",
   "/brain/forecasts",
+  "/brain/proposals",
 ];
 
 describe("layout", () => {
@@ -81,6 +84,7 @@ describe("layout", () => {
       "Purchase orders",
       "Risk and insights",
       "Forecasts",
+      "Proposals",
     ]);
     // The ERP screens and the Brain's read-only screens are two labelled groups.
     expect(within(nav).getByText("ERP")).toBeInTheDocument();

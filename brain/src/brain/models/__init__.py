@@ -12,6 +12,10 @@ from brain.models.model_choice import ModelChoice
 from brain.models.model_health import ModelHealth
 from brain.models.poll_state import PollState
 from brain.models.product_ref import ProductRef
+from brain.models.proposal import Proposal
+from brain.models.proposal_attempt import ProposalAttempt
+from brain.models.proposal_line import ProposalLine
+from brain.models.proposal_live_product import ProposalLiveProduct
 from brain.models.risk_result import RiskResult
 from brain.models.sales_daily import SalesDaily
 
@@ -27,6 +31,10 @@ __all__ = [
     "ModelHealth",
     "PollState",
     "ProductRef",
+    "Proposal",
+    "ProposalAttempt",
+    "ProposalLine",
+    "ProposalLiveProduct",
     "RiskResult",
     "SalesDaily",
 ]

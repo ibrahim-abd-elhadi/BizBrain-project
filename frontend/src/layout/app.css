@@ -196,3 +196,8 @@ body {
 .nowrap {
   white-space: nowrap;
 }
+
+.fingerprint {
+  font-size: 13px;
+  word-spacing: 2px;
+}

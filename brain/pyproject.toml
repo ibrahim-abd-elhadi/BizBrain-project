@@ -34,6 +34,7 @@ test = [
     "PyYAML==6.0.3",
     "pytest-cov==7.1.0",
     "ruff==0.17.5",
+    "rfc8785==0.1.4",  # test only: the independent RFC 8785 check (feature 004, L-1)
 ]
 
 [project.scripts]

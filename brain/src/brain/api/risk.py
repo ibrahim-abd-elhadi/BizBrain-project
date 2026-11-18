@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import distinct_on
 
 from brain.api.auth import require_manager
 from brain.db import SessionDep
-from brain.models import Anomaly, JobRun, ProductRef, RiskResult
+from brain.models import Anomaly, JobRun, ProductRef, Proposal, ProposalLiveProduct, RiskResult
 
 router = APIRouter(prefix="/api/v1/brain", dependencies=[Depends(require_manager)])
 
@@ -64,6 +64,14 @@ def list_risk(session: SessionDep) -> dict[str, Any]:
             .order_by(Anomaly.product_id, Anomaly.business_date.desc(), Anomaly.found_at.desc())
         )
     }
+    live = {
+        product_id: {"id": str(proposal_id), "status": status}
+        for product_id, proposal_id, status in session.execute(
+            select(ProposalLiveProduct.product_id, Proposal.id, Proposal.status).join(
+                Proposal, Proposal.id == ProposalLiveProduct.proposal_id
+            )
+        )
+    }
     items = [
         {
             "product_id": r.product_id,
@@ -93,6 +101,9 @@ def list_risk(session: SessionDep) -> dict[str, Any]:
             if r.product_id in anomalies
             else None,
             "computed_at": r.computed_at.isoformat(),
+            # Feature 004: the recommendation a proposal is built from, and the live proposal.
+            "recommendation_id": str(r.id),
+            "live_proposal": live.get(r.product_id),
         }
         for r in newest
     ]

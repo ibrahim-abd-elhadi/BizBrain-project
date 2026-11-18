@@ -1,5 +1,6 @@
 #!/bin/sh
-# brain-api's read-only login inside brain_db (feature 003, research R-16, D-45).
+# brain-api's login inside brain_db (feature 003 research R-16, D-45; feature 004 R-04): it reads
+# eight result tables and writes only the four proposal tables.
 #
 # Idempotent: runs by itself on a fresh volume (after 01-create-databases.sh), and can be run
 # again at any time on an existing volume:
@@ -33,8 +34,19 @@ SELECT format('GRANT SELECT ON TABLE %I TO %I', t, :'api_user')
 FROM unnest(ARRAY['risk_result', 'forecast', 'model_choice', 'model_health',
                   'anomaly', 'product_ref', 'sales_daily', 'job_run']) AS t
 WHERE to_regclass(format('public.%I', t)) IS NOT NULL \gexec
+-- Feature 004: writes on the proposal tables only (same list as brain/src/brain/grants.py).
+SELECT format('GRANT %s ON TABLE %I TO %I', p, t, :'api_user')
+FROM (VALUES ('proposal', 'SELECT, INSERT, UPDATE'),
+             ('proposal_line', 'SELECT, INSERT'),
+             ('proposal_live_product', 'SELECT, INSERT, DELETE'),
+             ('proposal_attempt', 'SELECT, INSERT, UPDATE')) AS w(t, p)
+WHERE to_regclass(format('public.%I', t)) IS NOT NULL \gexec
 SELECT format('brain_api role %s: SELECT on %s', :'api_user',
               coalesce(string_agg(table_name, ', ' ORDER BY table_name), 'no tables yet'))
 FROM information_schema.role_table_grants
 WHERE grantee = :'api_user' AND privilege_type = 'SELECT';
+SELECT format('brain_api role %s: writes on %s', :'api_user',
+              coalesce(string_agg(DISTINCT table_name, ', ' ORDER BY table_name), 'no tables yet'))
+FROM information_schema.role_table_grants
+WHERE grantee = :'api_user' AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE');
 EOSQL

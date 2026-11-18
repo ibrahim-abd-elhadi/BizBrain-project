@@ -40,6 +40,9 @@ export interface RiskRow {
   inputs: RiskInputs;
   latest_anomaly: Anomaly | null;
   computed_at: string;
+  /** The risk_result this row shows; a proposal is built from it (feature 004). */
+  recommendation_id: string;
+  live_proposal: { id: string; status: "awaiting_approval" | "uncertain" } | null;
 }
 
 export interface RiskList {
@@ -72,4 +75,64 @@ export interface ProductForecast {
   history: { business_date: string; y_units: number }[];
   forecast: { target_date: string; yhat: number; low: number; high: number }[];
   anomalies: Anomaly[];
+}
+
+// Feature 004: proposals (specs/004-approval-flow/contracts/brain-api-proposals.openapi.yaml).
+
+export type ProposalStatus = "awaiting_approval" | "uncertain" | "draft_created" | "failed" | "rejected";
+
+export interface ProposalArguments {
+  supplier_id: string;
+  lines: { product_id: string; quantity: number }[];
+}
+
+export interface Proposal {
+  synthetic: true;
+  id: string;
+  action: "create_purchase_order";
+  origin: "recommendation" | "assistant";
+  status: ProposalStatus;
+  sending: boolean;
+  supplier_id: string;
+  supplier_name: string | null;
+  arguments: ProposalArguments;
+  arguments_sha256: string;
+  recommendation_id: string | null;
+  purchase_order_id: number | null;
+  created_at: string;
+}
+
+export interface ProposalList {
+  synthetic: true;
+  items: Proposal[];
+}
+
+export interface RecommendationSummary {
+  recommendation_id: string;
+  product_id: string;
+  risk: RiskLevel | null;
+  days_of_cover: number | null;
+  lead_time_days: number | null;
+  order_qty: number | null;
+  computed_at: string;
+}
+
+export interface ProposalAttempt {
+  attempt_no: number;
+  started_at: string;
+  finished_at: string | null;
+  outcome: "draft_created" | "uncertain" | "failed" | "not_sent" | null;
+  http_status: number | null;
+  erp_code: string | null;
+  detail: string | null;
+  purchase_order_id: number | null;
+}
+
+export interface ProposalDetail extends Proposal {
+  lines: { product_id: string; product_name: string | null; quantity: number }[];
+  recommendation: RecommendationSummary | null;
+  newer_recommendation: RecommendationSummary | null;
+  approval: { approved_by: string; approved_at: string } | null;
+  failure: { code: string; reason: string } | null;
+  attempts: ProposalAttempt[];
 }

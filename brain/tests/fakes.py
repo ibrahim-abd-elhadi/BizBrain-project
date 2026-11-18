@@ -7,7 +7,10 @@ Brain is tested against the Canonical contract, not against itself.
 
 import base64
 import csv
+import hashlib
 import json
+import threading
+import uuid
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
@@ -134,6 +137,11 @@ class FakeCanonical:
         self.requests: list[httpx.Request] = []
         self._now = now or (lambda: datetime.now(UTC))
         self._sales_page_count = 0
+        # Draft POs (feature 004): idempotency records by key, and every POST received.
+        self.idempotency: dict[str, tuple[str, dict[str, Any]]] = {}
+        self.posts: list[httpx.Request] = []
+        self._po_lock = threading.Lock()
+        self._next_po = 1001
 
     # ---- set-up helpers
     def load_seed(self, today: date, updated_at: datetime) -> "FakeCanonical":
@@ -171,6 +179,14 @@ class FakeCanonical:
     def new_poll(self) -> None:
         self._sales_page_count = 0
 
+    def drafts(self) -> list[dict[str, Any]]:
+        """The draft orders this fake created through the POST."""
+        return [o for o in self.open_orders if o.get("created_by") == "agent"]
+
+    def post_requests(self) -> list[dict[str, Any]]:
+        """Every draft-PO request received: its raw body and headers."""
+        return [{"body": r.content, "headers": dict(r.headers)} for r in self.posts]
+
     # ---- request handling
     def _failure(self, op: str) -> httpx.Response | None:
         status = self.fail.get(op)
@@ -185,6 +201,8 @@ class FakeCanonical:
         if request.headers.get("authorization") != f"Bearer {TOKEN}":
             return _error(401, "UNAUTHORIZED", "A valid service token is required")
         path = request.url.path.removeprefix("/api/v1/canonical")
+        if request.method == "POST" and path == "/purchase-orders":
+            return self._create_po(request)
         if path == "/sales":
             return self._sales(request)
         for prefix, store, op, schema in (
@@ -220,6 +238,87 @@ class FakeCanonical:
             validate("canonical/purchase_order_page.schema.json", page)
             return httpx.Response(200, json=page)
         return _error(404, "NOT_FOUND", "unknown path")
+
+    def _create_po(self, request: httpx.Request) -> httpx.Response:
+        """Feature 002's draft-PO rules: auth, key, content hash, lock and lookup, validate,
+        create. `fail["create_po"]` can be a status, "timeout", "timeout_after_commit" or
+        "garbage_2xx"."""
+        self.posts.append(request)
+        mode = self.fail.get("create_po")
+        if mode == "timeout":
+            raise httpx.ReadTimeout("fake timeout before commit")
+        if isinstance(mode, int):
+            codes = {
+                401: "UNAUTHORIZED",
+                403: "FORBIDDEN",
+                409: "IDEMPOTENCY_CONFLICT",
+                422: "VALIDATION_ERROR",
+            }
+            return _error(mode, codes.get(mode, "INTERNAL_ERROR"), f"fake {mode}")
+        key = request.headers.get("idempotency-key", "")
+        try:
+            uuid.UUID(key)
+        except ValueError:
+            return _error(422, "VALIDATION_ERROR", "Idempotency-Key must be a UUID")
+        try:
+            parsed = json.loads(request.content)
+            content = hashlib.sha256(
+                json.dumps(parsed, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        except ValueError:
+            return _error(422, "VALIDATION_ERROR", "body: must be JSON")
+        with self._po_lock:
+            known = self.idempotency.get(key)
+            if known is not None:
+                if known[0] != content:
+                    return _error(
+                        409,
+                        "IDEMPOTENCY_CONFLICT",
+                        "This Idempotency-Key was already used with a different request body",
+                    )
+                return self._answer(200, known[1], mode)
+            try:
+                validate("canonical/create_draft_po_request.schema.json", parsed)
+            except Exception as exc:  # noqa: BLE001
+                return _error(422, "VALIDATION_ERROR", f"body: {str(exc).splitlines()[0]}")
+            if parsed["approval"]["proposal_id"] != key:
+                return _error(
+                    422, "VALIDATION_ERROR", "approval.proposal_id must equal the Idempotency-Key"
+                )
+            stamp = z(self._now())
+            order = {
+                "schema": "canonical.PurchaseOrder",
+                "version": "1.0",
+                "purchase_order_id": self._next_po,
+                "supplier_id": parsed["supplier_id"],
+                "status": "draft",
+                "lines": [
+                    {
+                        "product_id": line["product_id"],
+                        "ordered_qty": line["quantity"],
+                        "received_qty": 0,
+                        "open_qty": line["quantity"],
+                    }
+                    for line in parsed["lines"]
+                ],
+                "created_by": "agent",
+                "approval": parsed["approval"],
+                "created_at": stamp,
+                "updated_at": stamp,
+            }
+            validate("canonical/purchase_order.schema.json", order)
+            self._next_po += 1
+            self.open_orders.append(order)
+            self.idempotency[key] = (content, order)
+        if mode == "timeout_after_commit":
+            raise httpx.ReadTimeout("fake timeout after commit")
+        return self._answer(201, order, mode)
+
+    @staticmethod
+    def _answer(status: int, order: dict[str, Any], mode: Any) -> httpx.Response:
+        if mode == "garbage_2xx":
+            return httpx.Response(status, content=b"<html>not json</html>")
+        return httpx.Response(status, json=order)
 
     def _sales(self, request: httpx.Request) -> httpx.Response:
         params = request.url.params

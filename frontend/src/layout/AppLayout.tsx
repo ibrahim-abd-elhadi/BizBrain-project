@@ -1,5 +1,6 @@
 import {
   AlertOutlined,
+  AuditOutlined,
   DatabaseOutlined,
   FileTextOutlined,
   FundOutlined,
@@ -27,6 +28,7 @@ const LINKS = [
 const BRAIN_LINKS = [
   { to: "/brain/risk", label: "Risk and insights", icon: <AlertOutlined aria-hidden /> },
   { to: "/brain/forecasts", label: "Forecasts", icon: <FundOutlined aria-hidden /> },
+  { to: "/brain/proposals", label: "Proposals", icon: <AuditOutlined aria-hidden /> },
 ];
 
 const menuItem = (link: (typeof LINKS)[number]) => ({

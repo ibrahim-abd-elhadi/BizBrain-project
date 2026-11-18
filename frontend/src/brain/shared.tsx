@@ -1,5 +1,5 @@
 import { Tag } from "antd";
-import type { Anomaly, ModelKind, ReasonCode, RiskLevel } from "../api/brainTypes";
+import type { Anomaly, ModelKind, ProposalStatus, ReasonCode, RiskLevel } from "../api/brainTypes";
 
 /** Every Brain screen carries the label itself (README; FR-033), not only via the app shell. */
 export function SyntheticTag() {
@@ -60,3 +60,25 @@ export function cairoTime(iso: string): string {
 }
 
 export const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+
+// Feature 004: proposal statuses, in words and colours (research R-12).
+const STATUS_TAGS: Record<ProposalStatus, { label: string; color?: string }> = {
+  awaiting_approval: { label: "Awaiting approval", color: "blue" },
+  uncertain: { label: "Uncertain", color: "orange" },
+  draft_created: { label: "Draft created", color: "green" },
+  failed: { label: "Failed", color: "red" },
+  rejected: { label: "Rejected" },
+};
+
+export function ProposalStatusTag({ status, sending = false }: { status: ProposalStatus; sending?: boolean }) {
+  if (sending) return <Tag color="orange">Sending…</Tag>;
+  const tag = STATUS_TAGS[status];
+  return <Tag color={tag.color}>{tag.label}</Tag>;
+}
+
+export const ORIGIN_LABELS = { recommendation: "Recommendation", assistant: "Assistant" } as const;
+
+/** The 64-character fingerprint in groups of 8, for reading it aloud or comparing by eye. */
+export function groupedFingerprint(sha: string): string {
+  return sha.match(/.{1,8}/g)?.join(" ") ?? sha;
+}

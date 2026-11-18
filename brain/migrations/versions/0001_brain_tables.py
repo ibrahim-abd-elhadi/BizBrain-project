@@ -25,10 +25,31 @@ depends_on = None
 
 log = logging.getLogger("alembic.brain")
 
+# This revision's tables, named so that later models (feature 004's proposals, revision 0002) are
+# never created here (feature 004 research R-03).
+TWELVE = (
+    "sales_daily",
+    "poll_state",
+    "job_run",
+    "product_ref",
+    "model_artifact",
+    "model_choice",
+    "forecast",
+    "forecast_evaluation",
+    "model_health",
+    "anomaly",
+    "anomaly_scan_progress",
+    "risk_result",
+)
+
+
+def _tables():
+    return [Base.metadata.tables[name] for name in TWELVE]
+
 
 def upgrade() -> None:
     bind = op.get_bind()
-    Base.metadata.create_all(bind=bind)
+    Base.metadata.create_all(bind=bind, tables=_tables())
     role = get_settings().api_db_user
     if role and role_exists(bind, role):
         apply_api_grants(bind, role)
@@ -40,4 +61,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    Base.metadata.drop_all(bind=op.get_bind())
+    Base.metadata.drop_all(bind=op.get_bind(), tables=_tables())

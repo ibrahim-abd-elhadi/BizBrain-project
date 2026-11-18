@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from brain.api import forecasts, risk
+from brain.api import forecasts, proposals, risk
 from brain.api.auth import load_public_key
 from brain.api.errors import register_error_handlers
 from brain.config import get_settings
@@ -30,6 +30,7 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
     app.include_router(risk.router)
     app.include_router(forecasts.router)
+    app.include_router(proposals.router)
     return app
 
 
