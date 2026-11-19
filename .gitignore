@@ -12,3 +12,7 @@ node_modules/
 frontend/dist/
 *.tsbuildinfo
 .vscode/
+
+# Spec Kit files stay local only (backed up outside the repo).
+.specify/
+specs/
