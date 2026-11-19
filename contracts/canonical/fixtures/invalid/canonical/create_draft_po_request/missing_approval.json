@@ -1,0 +1,12 @@
+{
+  "$schema_ref": "schemas/canonical/create_draft_po_request.schema.json",
+  "document": {
+    "supplier_id": "S004",
+    "lines": [
+      {
+        "product_id": "P003",
+        "quantity": 120
+      }
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-"""GET /api/v1/brain/forecasts and /forecasts/{product_id} (FR-029; contracts/brain-api.openapi.yaml).
+"""GET /api/v1/brain/forecasts and /forecasts/{product_id} (FR-029; contracts/brain/brain-api.openapi.yaml).
 
 "Current forecast" means the newest succeeded end-of-day run's. History is the last
 BRAIN_FORECASTS_HISTORY_DAYS closed days up to that run's newest closed day, a closed day with no

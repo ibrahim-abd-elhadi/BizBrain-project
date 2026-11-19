@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Approval block",
+  "description": "Evidence of the human approval that the Brain attaches to a draft PO (D-11). The ERP stores it and does not judge it (spec FR-034).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proposal_id",
+    "approved_by",
+    "approved_at",
+    "arguments_sha256"
+  ],
+  "properties": {
+    "proposal_id": {
+      "$ref": "../common/defs.schema.json#/$defs/uuid"
+    },
+    "approved_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "The pharmacy manager's username."
+    },
+    "approved_at": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    },
+    "arguments_sha256": {
+      "$ref": "../common/defs.schema.json#/$defs/sha256"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Create draft purchase order (request)",
+  "description": "Header Idempotency-Key = approval.proposal_id (D-09). Creates a DRAFT only; the manager confirms it in the ERP. The main plan's note field is dropped (spec FR-021).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "supplier_id",
+    "lines",
+    "approval"
+  ],
+  "properties": {
+    "supplier_id": {
+      "$ref": "../common/defs.schema.json#/$defs/supplier_id"
+    },
+    "lines": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_id",
+          "quantity"
+        ],
+        "properties": {
+          "product_id": {
+            "$ref": "../common/defs.schema.json#/$defs/product_id"
+          },
+          "quantity": {
+            "$ref": "../common/defs.schema.json#/$defs/positive_quantity"
+          }
+        }
+      }
+    },
+    "approval": {
+      "$ref": "approval_block.schema.json"
+    }
+  }
+}

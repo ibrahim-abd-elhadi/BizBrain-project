@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "canonical.InventoryItem",
+  "description": "Stock of one product at the pharmacy's one location. The main plan's location_id, inventory_scope, reserved, unit and reorder_point are dropped (one location; no such data in the ERP). available = on_hand.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "product_id",
+    "on_hand",
+    "available",
+    "updated_at"
+  ],
+  "properties": {
+    "schema": {
+      "const": "canonical.InventoryItem"
+    },
+    "version": {
+      "$ref": "../common/defs.schema.json#/$defs/schema_version"
+    },
+    "product_id": {
+      "$ref": "../common/defs.schema.json#/$defs/product_id"
+    },
+    "on_hand": {
+      "$ref": "../common/defs.schema.json#/$defs/non_negative_quantity"
+    },
+    "available": {
+      "$ref": "../common/defs.schema.json#/$defs/non_negative_quantity"
+    },
+    "updated_at": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    }
+  }
+}

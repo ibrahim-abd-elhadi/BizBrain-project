@@ -1,4 +1,4 @@
-"""The chat agent's tools (research R-03, R-08; contracts/assistant-tools.md).
+"""The chat agent's tools (research R-03, R-08; contracts/assistant/assistant-tools.md).
 
 Five read tools and one write tool. Each result is a JSON-safe dict, kept as one of the turn's
 facts: the grounding guard allows only values from these results (D-18). Every total, count,

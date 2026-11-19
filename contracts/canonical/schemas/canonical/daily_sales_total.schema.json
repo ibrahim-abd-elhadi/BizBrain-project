@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "canonical.DailySalesTotal",
+  "description": "Absolute daily total per product and Cairo business date (D-05, D-06). Corrections overwrite; a closed day is final. No tenant_id; no complete flag (README Section 7).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "product_id",
+    "business_date",
+    "units_sold",
+    "units_returned",
+    "net_units",
+    "day_status",
+    "updated_at"
+  ],
+  "properties": {
+    "schema": {
+      "const": "canonical.DailySalesTotal"
+    },
+    "version": {
+      "$ref": "../common/defs.schema.json#/$defs/schema_version"
+    },
+    "product_id": {
+      "$ref": "../common/defs.schema.json#/$defs/product_id"
+    },
+    "business_date": {
+      "$ref": "../common/defs.schema.json#/$defs/business_date"
+    },
+    "units_sold": {
+      "$ref": "../common/defs.schema.json#/$defs/non_negative_quantity"
+    },
+    "units_returned": {
+      "$ref": "../common/defs.schema.json#/$defs/non_negative_quantity"
+    },
+    "net_units": {
+      "type": "integer",
+      "description": "units_sold - units_returned; negative only if returns exceed sales that day."
+    },
+    "day_status": {
+      "enum": [
+        "open",
+        "closed"
+      ]
+    },
+    "updated_at": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    }
+  }
+}

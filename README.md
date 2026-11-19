@@ -82,6 +82,8 @@ All three paths write to `erp_db`. The Brain sees them only by polling the Canon
 
 This works as in the main plan, minus tenants and branches. The main plan's `contracts/` are reused, with the multi-tenant and multi-branch parts removed. Product and supplier IDs are readable strings (for example `P001`, `S001`) instead of UUIDs.
 
+Contract files (OpenAPI, JSON Schemas, fixtures) live in contracts/.
+
 | Endpoint | Used for |
 |---|---|
 | `GET /api/v1/canonical/sales` | Daily sales totals. Parameters: `from`, `to`, `updated_since`, `cursor`, `limit` |

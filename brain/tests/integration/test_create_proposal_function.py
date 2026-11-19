@@ -1,5 +1,5 @@
 """One proposal shape for rules and for the agent (feature 004 US4 scenarios 1-4; FR-008;
-contracts/create-proposal.md). Feature 005's propose_purchase_order tool will call this function.
+contracts/brain/create-proposal.md). Feature 005's propose_purchase_order tool will call this function.
 Written before the final shape of the function."""
 
 import pytest

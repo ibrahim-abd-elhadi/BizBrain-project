@@ -1,4 +1,4 @@
-// Types for the Brain API (specs/003-brain-intelligence/contracts/brain-api.openapi.yaml).
+// Types for the Brain API (contracts/brain/brain-api.openapi.yaml).
 
 export type RiskLevel = "high" | "medium" | "low";
 export type ReasonCode = "NO_SUPPLIER" | "OPEN_PO_UNAVAILABLE";
@@ -77,7 +77,7 @@ export interface ProductForecast {
   anomalies: Anomaly[];
 }
 
-// Feature 004: proposals (specs/004-approval-flow/contracts/brain-api-proposals.openapi.yaml).
+// Feature 004: proposals (contracts/brain/brain-api-proposals.openapi.yaml).
 
 export type ProposalStatus = "awaiting_approval" | "uncertain" | "draft_created" | "failed" | "rejected";
 
@@ -137,7 +137,7 @@ export interface ProposalDetail extends Proposal {
   attempts: ProposalAttempt[];
 }
 
-// ---- Feature 005: the assistant, the briefing and Why? (contracts/brain-api-assistant.openapi.yaml)
+// ---- Feature 005: the assistant, the briefing and Why? (contracts/assistant/brain-api-assistant.openapi.yaml)
 
 export type Language = "en" | "ar";
 export type OfflineReason =

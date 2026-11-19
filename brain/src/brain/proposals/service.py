@@ -1,4 +1,4 @@
-"""Creating proposals (feature 004 research R-02, R-08, R-09; contracts/create-proposal.md).
+"""Creating proposals (feature 004 research R-02, R-08, R-09; contracts/brain/create-proposal.md).
 
 `create_proposal` is the one internal create function: the Risk and insights action uses it
 through `propose_from_recommendation`, and feature 005's `propose_purchase_order` tool will call

@@ -1,0 +1,16 @@
+{
+  "$schema_ref": "schemas/common/error.schema.json",
+  "document": {
+    "error": {
+      "code": "IDEMPOTENCY_CONFLICT",
+      "message": "This Idempotency-Key was already used with a different request body",
+      "details": [
+        {
+          "field": "Idempotency-Key",
+          "issue": "different body for an existing key"
+        }
+      ],
+      "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736"
+    }
+  }
+}

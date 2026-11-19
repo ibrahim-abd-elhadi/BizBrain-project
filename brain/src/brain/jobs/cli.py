@@ -1,5 +1,5 @@
 """`brain-worker`: serve | run <job> | reset [--yes] | healthcheck | eval-assistant
-(contracts/brain-worker-cli.md). There is no other way to start a job, and no screen button (D-38).
+(contracts/brain/brain-worker-cli.md). There is no other way to start a job, and no screen button (D-38).
 `eval-assistant` (feature 005) is not a job: it runs the evaluation set and writes a report.
 """
 

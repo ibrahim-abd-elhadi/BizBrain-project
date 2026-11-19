@@ -1,0 +1,316 @@
+openapi: 3.1.0
+info:
+  title: BizBrain Brain API (feature 004, proposals and approval)
+  version: 1.0.0
+  description: |
+    Adds proposals to feature 003's read API (specs/003-brain-intelligence/contracts/
+    brain-api.openapi.yaml). Every call needs the pharmacy manager's ERP login token, checked as in
+    feature 003. Errors use the {"detail", "code"} shape. Nothing here runs a worker job (D-38).
+    The only ERP write is the draft purchase order sent on approve or send-again (README 4.5).
+    Feature 003's RiskRow gains `recommendation_id` and `live_proposal` (see RiskRowAdditions).
+servers:
+  - url: /api/v1/brain
+security:
+  - managerToken: []
+
+paths:
+  /proposals:
+    get:
+      operationId: listProposals
+      summary: Every proposal, newest first
+      responses:
+        '200':
+          description: The proposals
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProposalList' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      operationId: createProposalFromRecommendation
+      summary: Build a create_purchase_order proposal from a product's newest recommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [recommendation_id]
+              properties:
+                recommendation_id: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Created, awaiting approval
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Proposal' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: RECOMMENDATION_CHANGED (not the product's newest, or its product data has been re-read since) or PROPOSAL_PENDING (a live proposal exists; its id is in `proposal_id`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: NO_ORDER_RECOMMENDED (quantity 0 or a reason code) or VALIDATION_ERROR
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /proposals/{proposal_id}:
+    get:
+      operationId: getProposal
+      summary: One proposal with its lines, recommendation, newer-recommendation warning and history
+      parameters: [{ $ref: '#/components/parameters/ProposalId' }]
+      responses:
+        '200':
+          description: The proposal
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProposalDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /proposals/{proposal_id}/approve:
+    post:
+      operationId: approveProposal
+      summary: Approve with the fingerprint the manager saw, then send the draft PO once
+      description: |
+        Checks the fingerprint, records the approval and the exact request body, sends one draft-PO
+        request (Idempotency-Key = proposal id) and returns the proposal with the outcome:
+        draft_created, uncertain or failed. An ERP outcome is never an HTTP error here.
+      parameters: [{ $ref: '#/components/parameters/ProposalId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [arguments_sha256]
+              properties:
+                arguments_sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+      responses:
+        '200':
+          description: Approved; the outcome of the send is in `status`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProposalDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: FINGERPRINT_MISMATCH (nothing changed, nothing sent) or NOT_AWAITING_APPROVAL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /proposals/{proposal_id}/send-again:
+    post:
+      operationId: sendProposalAgain
+      summary: Resend an uncertain proposal's stored request, same key and same body
+      parameters: [{ $ref: '#/components/parameters/ProposalId' }]
+      responses:
+        '200':
+          description: The outcome of this attempt is in `status`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProposalDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: NOT_UNCERTAIN
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /proposals/{proposal_id}/reject:
+    post:
+      operationId: rejectProposal
+      summary: Close a proposal awaiting approval for good; nothing is sent
+      parameters: [{ $ref: '#/components/parameters/ProposalId' }]
+      responses:
+        '200':
+          description: Rejected
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProposalDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: NOT_AWAITING_APPROVAL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  securitySchemes:
+    managerToken: { type: http, scheme: bearer, bearerFormat: JWT (EdDSA, the ERP's login token) }
+
+  parameters:
+    ProposalId:
+      name: proposal_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthenticated:
+      description: No, expired, tampered or wrong-audience token
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: No such proposal or recommendation
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: A malformed id or body
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    Error:
+      type: object
+      required: [detail, code]
+      properties:
+        detail: { type: string }
+        code:
+          enum:
+            - UNAUTHENTICATED
+            - NOT_FOUND
+            - VALIDATION_ERROR
+            - METHOD_NOT_ALLOWED
+            - RECOMMENDATION_CHANGED
+            - PROPOSAL_PENDING
+            - NO_ORDER_RECOMMENDED
+            - FINGERPRINT_MISMATCH
+            - NOT_AWAITING_APPROVAL
+            - NOT_UNCERTAIN
+        proposal_id: { type: string, format: uuid, description: With PROPOSAL_PENDING, the live proposal }
+
+    Status: { enum: [awaiting_approval, uncertain, draft_created, failed, rejected] }
+
+    Arguments:
+      type: object
+      additionalProperties: false
+      required: [supplier_id, lines]
+      properties:
+        supplier_id: { type: string, pattern: '^S[0-9]{3,}$' }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required: [product_id, quantity]
+            properties:
+              product_id: { type: string, pattern: '^P[0-9]{3,}$' }
+              quantity: { type: integer, minimum: 1, maximum: 1000000 }
+
+    Proposal:
+      type: object
+      required: [synthetic, id, action, origin, status, sending, supplier_id, supplier_name, arguments,
+                 arguments_sha256, recommendation_id, purchase_order_id, created_at]
+      properties:
+        synthetic: { const: true }
+        id: { type: string, format: uuid }
+        action: { const: create_purchase_order }
+        origin: { enum: [recommendation, assistant] }
+        status: { $ref: '#/components/schemas/Status' }
+        sending: { type: boolean, description: An attempt started less than the ERP timeout + 5 s ago has no answer yet }
+        supplier_id: { type: string }
+        supplier_name: { type: [string, 'null'] }
+        arguments: { $ref: '#/components/schemas/Arguments' }
+        arguments_sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+        recommendation_id: { type: [string, 'null'], format: uuid }
+        purchase_order_id: { type: [integer, 'null'] }
+        created_at: { type: string, format: date-time }
+
+    ProposalList:
+      type: object
+      required: [synthetic, items]
+      properties:
+        synthetic: { const: true }
+        items: { type: array, items: { $ref: '#/components/schemas/Proposal' } }
+
+    ProposalDetail:
+      allOf:
+        - $ref: '#/components/schemas/Proposal'
+        - type: object
+          required: [lines, recommendation, newer_recommendation, approval, failure, attempts]
+          properties:
+            lines:
+              type: array
+              items:
+                type: object
+                required: [product_id, product_name, quantity]
+                properties:
+                  product_id: { type: string }
+                  product_name: { type: [string, 'null'] }
+                  quantity: { type: integer }
+            recommendation:
+              description: The recommendation a rule-built proposal came from; null for the assistant
+              oneOf:
+                - type: 'null'
+                - $ref: '#/components/schemas/RecommendationSummary'
+            newer_recommendation:
+              description: Set while awaiting approval if the product has a newer recommendation (FR-011a)
+              oneOf:
+                - type: 'null'
+                - $ref: '#/components/schemas/RecommendationSummary'
+            approval:
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [approved_by, approved_at]
+                  properties:
+                    approved_by: { type: string }
+                    approved_at: { type: string, format: date-time }
+            failure:
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [code, reason]
+                  properties:
+                    code: { type: string }
+                    reason: { type: string }
+            attempts:
+              type: array
+              items:
+                type: object
+                required: [attempt_no, started_at, finished_at, outcome, http_status, erp_code, detail, purchase_order_id]
+                properties:
+                  attempt_no: { type: integer, minimum: 1 }
+                  started_at: { type: string, format: date-time }
+                  finished_at: { type: [string, 'null'], format: date-time }
+                  outcome: { enum: [draft_created, uncertain, failed, not_sent, null] }
+                  http_status: { type: [integer, 'null'] }
+                  erp_code: { type: [string, 'null'] }
+                  detail: { type: [string, 'null'] }
+                  purchase_order_id: { type: [integer, 'null'] }
+
+    RecommendationSummary:
+      type: object
+      required: [recommendation_id, product_id, risk, days_of_cover, lead_time_days, order_qty, computed_at]
+      properties:
+        recommendation_id: { type: string, format: uuid }
+        product_id: { type: string }
+        risk: { enum: [high, medium, low, null] }
+        days_of_cover: { type: [number, 'null'] }
+        lead_time_days: { type: [integer, 'null'] }
+        order_qty: { type: [integer, 'null'] }
+        computed_at: { type: string, format: date-time }
+
+    RiskRowAdditions:
+      description: Fields added to feature 003's RiskRow (GET /risk), additive
+      type: object
+      required: [recommendation_id, live_proposal]
+      properties:
+        recommendation_id: { type: string, format: uuid }
+        live_proposal:
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [id, status]
+              properties:
+                id: { type: string, format: uuid }
+                status: { enum: [awaiting_approval, uncertain] }

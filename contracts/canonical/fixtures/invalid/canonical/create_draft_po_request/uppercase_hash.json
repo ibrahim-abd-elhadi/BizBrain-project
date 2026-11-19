@@ -1,0 +1,18 @@
+{
+  "$schema_ref": "schemas/canonical/create_draft_po_request.schema.json",
+  "document": {
+    "supplier_id": "S004",
+    "lines": [
+      {
+        "product_id": "P003",
+        "quantity": 120
+      }
+    ],
+    "approval": {
+      "proposal_id": "a9000000-0000-4000-8000-000000000001",
+      "approved_by": "manager",
+      "approved_at": "2026-11-18T11:02:00Z",
+      "arguments_sha256": "D67AD9758D7806F685B4294E16A538F84157456E2DE40B23AA5CA9C6993B57CE"
+    }
+  }
+}

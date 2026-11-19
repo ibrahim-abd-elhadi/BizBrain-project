@@ -1,6 +1,6 @@
 """Upload CSV: replace today's daily totals from a file (FR-013, FR-014, FR-026).
 
-The format is in specs/001-erp-core/contracts/sales-upload-csv.md. Processing order (research R-20):
+The format is in contracts/erp/sales-upload-csv.md. Processing order (research R-20):
 parse the whole file, keep only the last row per product and date, validate each kept row, then
 apply every accepted row in one transaction. A row that fails is refused and reported; the others
 are still recorded. A bad file (header, size, encoding, row count) is refused as a whole.

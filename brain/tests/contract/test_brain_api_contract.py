@@ -7,10 +7,10 @@ from pathlib import Path
 import yaml
 from jsonschema import Draft202012Validator, FormatChecker
 
-SPECS = Path(__file__).resolve().parents[3] / "specs"
-CONTRACT = SPECS / "003-brain-intelligence/contracts/brain-api.openapi.yaml"
-PROPOSALS_CONTRACT = SPECS / "004-approval-flow/contracts/brain-api-proposals.openapi.yaml"
-ASSISTANT_CONTRACT = SPECS / "005-ai-assistant/contracts/brain-api-assistant.openapi.yaml"
+CONTRACTS = Path(__file__).resolve().parents[3] / "contracts"
+CONTRACT = CONTRACTS / "brain/brain-api.openapi.yaml"
+PROPOSALS_CONTRACT = CONTRACTS / "brain/brain-api-proposals.openapi.yaml"
+ASSISTANT_CONTRACT = CONTRACTS / "assistant/brain-api-assistant.openapi.yaml"
 PENDING: set[tuple[str, str]] = set()  # every feature 005 operation is served
 HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 

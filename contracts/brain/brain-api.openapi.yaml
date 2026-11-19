@@ -1,0 +1,235 @@
+openapi: 3.1.0
+info:
+  title: BizBrain Brain API (feature 003, read endpoints)
+  version: 1.0.0
+  description: |
+    Read-only endpoints for the Brain screens (Risk and insights, Forecasts). Every call needs the
+    pharmacy manager's ERP login token, which brain-api verifies itself with the ERP's public key
+    (signature, iss = bizbrain-erp, aud = bizbrain, exp). The Brain's service token
+    (aud = bizbrain-canonical) is refused. Errors use the ERP's {"detail", "code"} shape.
+    All data is synthetic. No endpoint runs a job (D-38) or writes anything.
+servers:
+  - url: /api/v1/brain
+security:
+  - managerToken: []
+
+paths:
+  /risk:
+    get:
+      operationId: listRisk
+      summary: The newest risk result and recommendation per product, highest risk first
+      description: |
+        Sorted high, medium, low, then rows with no risk (no lead time ever read); within a level
+        by days of cover ascending (unlimited last), then product_id. An empty list with results_exist = false means the first end-of-day run
+        has not finished yet.
+      responses:
+        '200':
+          description: The risk list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RiskList' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /forecasts:
+    get:
+      operationId: listForecastProducts
+      summary: The products that have a current forecast, for the product picker
+      responses:
+        '200':
+          description: Products with a forecast
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ForecastProduct' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /forecasts/{product_id}:
+    get:
+      operationId: getForecast
+      summary: A product's last 28 closed days, its 14-day forecast with range, and its model
+      parameters:
+        - { name: product_id, in: path, required: true, schema: { type: string, pattern: '^P[0-9]{3,}$' } }
+      responses:
+        '200':
+          description: The product's forecast
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductForecast' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+components:
+  securitySchemes:
+    managerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT (EdDSA, issued by the ERP's POST /api/v1/erp/auth/login)
+
+  responses:
+    Unauthenticated:
+      description: No, expired, tampered or wrong-audience token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { detail: Sign in required, code: UNAUTHENTICATED }
+    NotFound:
+      description: The product has no forecast
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { detail: No forecast for P999, code: NOT_FOUND }
+    ValidationError:
+      description: The product ID is not in the ERP's format
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [detail, code]
+      properties:
+        detail: { type: string }
+        code: { type: string, enum: [UNAUTHENTICATED, NOT_FOUND, VALIDATION_ERROR, METHOD_NOT_ALLOWED] }
+
+    RiskList:
+      type: object
+      required: [synthetic, results_exist, last_end_of_day, items]
+      properties:
+        synthetic: { const: true, description: Every result is synthetic (README) }
+        results_exist: { type: boolean }
+        last_end_of_day: { type: [string, 'null'], format: date-time, description: When the newest end-of-day run finished }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/RiskRow' }
+
+    RiskRow:
+      type: object
+      required:
+        - product_id
+        - product_name
+        - risk
+        - base_risk
+        - raised_by_spike
+        - days_of_cover
+        - lead_time_days
+        - available
+        - open_po_qty
+        - order_qty
+        - reason_code
+        - inputs
+        - latest_anomaly
+        - computed_at
+        - recommendation_id
+        - live_proposal
+      properties:
+        product_id: { type: string, pattern: '^P[0-9]{3,}$' }
+        product_name: { type: string }
+        risk: { enum: [high, medium, low, null], description: null only without any lead time }
+        base_risk: { enum: [high, medium, low, null] }
+        raised_by_spike: { type: boolean }
+        days_of_cover: { type: [number, 'null'], description: null means unlimited }
+        lead_time_days: { type: [integer, 'null'] }
+        available: { type: integer, minimum: 0 }
+        open_po_qty: { type: [integer, 'null'], description: null when open POs could not be read }
+        order_qty: { type: [integer, 'null'], minimum: 0, description: null when reason_code is set }
+        reason_code: { enum: [NO_SUPPLIER, OPEN_PO_UNAVAILABLE, null] }
+        inputs:
+          type: object
+          description: Every input of the computation, so the quantity can be checked by hand (FR-028)
+          required: [forecast_over_lead, review_period_days, safety_stock, sd_28, mean_28, target, raw, pack_multiple, max_order_qty, forecast_run_date]
+          properties:
+            forecast_over_lead: { type: [number, 'null'], description: null when no lead time was ever read }
+            review_period_days: { type: integer }
+            safety_stock: { type: [integer, 'null'], description: null when no lead time was ever read }
+            sd_28: { type: number }
+            mean_28: { type: number }
+            target: { type: [integer, 'null'] }
+            raw: { type: [integer, 'null'] }
+            pack_multiple: { type: integer }
+            max_order_qty: { type: [integer, 'null'] }
+            forecast_run_date: { type: string, format: date }
+        latest_anomaly:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Anomaly'
+        computed_at: { type: string, format: date-time }
+        recommendation_id:
+          type: string
+          format: uuid
+          description: Added by feature 004 (additive) - the risk_result a proposal is built from
+        live_proposal:
+          description: Added by feature 004 (additive) - the product's live proposal, if any
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [id, status]
+              properties:
+                id: { type: string, format: uuid }
+                status: { enum: [awaiting_approval, uncertain] }
+
+    Anomaly:
+      type: object
+      required: [kind, scope, business_date, z, raised_risk]
+      properties:
+        kind: { enum: [spike, drop] }
+        scope: { enum: [intraday, closed] }
+        business_date: { type: string, format: date }
+        z: { type: number }
+        raised_risk: { type: boolean, description: true only for a spike on the day being checked (FR-021) }
+
+    ForecastProduct:
+      type: object
+      required: [product_id, product_name, chosen_model, degraded]
+      properties:
+        product_id: { type: string, pattern: '^P[0-9]{3,}$' }
+        product_name: { type: string }
+        chosen_model: { enum: [seasonal_naive, lightgbm] }
+        degraded: { type: boolean }
+
+    ProductForecast:
+      type: object
+      required: [synthetic, product_id, product_name, run_date, model, history, forecast, anomalies]
+      properties:
+        synthetic: { const: true }
+        product_id: { type: string, pattern: '^P[0-9]{3,}$' }
+        product_name: { type: string }
+        run_date: { type: string, format: date, description: Business date of the end-of-day run }
+        model:
+          type: object
+          required: [chosen_model, sn_backtest_wape, lgbm_backtest_wape, lgbm_eligible, degraded, live_wape]
+          properties:
+            chosen_model: { enum: [seasonal_naive, lightgbm] }
+            sn_backtest_wape: { type: [number, 'null'] }
+            lgbm_backtest_wape: { type: [number, 'null'] }
+            lgbm_eligible: { type: boolean }
+            degraded: { type: boolean }
+            live_wape: { type: [number, 'null'] }
+        history:
+          type: array
+          description: The last 28 closed days, oldest first (missing days count as 0)
+          maxItems: 28
+          items:
+            type: object
+            required: [business_date, y_units]
+            properties:
+              business_date: { type: string, format: date }
+              y_units: { type: integer, minimum: 0 }
+        forecast:
+          type: array
+          minItems: 14
+          maxItems: 14
+          items:
+            type: object
+            required: [target_date, yhat, low, high]
+            properties:
+              target_date: { type: string, format: date }
+              yhat: { type: number, minimum: 0 }
+              low: { type: number, minimum: 0 }
+              high: { type: number, minimum: 0 }
+        anomalies:
+          type: array
+          description: Anomalies on the days shown (history and today)
+          items: { $ref: '#/components/schemas/Anomaly' }

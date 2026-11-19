@@ -12,7 +12,7 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 CANON = "/api/v1/canonical"
-CONTRACTS = Path(__file__).resolve().parents[2] / "specs/002-canonical-api/contracts"
+CONTRACTS = Path(__file__).resolve().parents[2] / "contracts/canonical"
 SCHEMAS = CONTRACTS / "schemas"
 _BASE_URI = "https://contracts.bizbrain.invalid/schemas/"
 
@@ -30,7 +30,7 @@ def _registry() -> Registry:
 
 
 def validator(schema_name: str) -> Draft202012Validator:
-    """schema_name is relative to contracts/schemas, e.g. "canonical/product.schema.json"."""
+    """schema_name is relative to contracts/canonical/schemas, e.g. "canonical/product.schema.json"."""
     return Draft202012Validator(
         {"$ref": _BASE_URI + schema_name}, registry=_registry(), format_checker=FormatChecker()
     )

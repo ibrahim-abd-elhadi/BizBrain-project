@@ -1,4 +1,4 @@
-"""The Assistant screen's two operations (feature 005; contracts/brain-api-assistant.openapi.yaml).
+"""The Assistant screen's two operations (feature 005; contracts/assistant/brain-api-assistant.openapi.yaml).
 
 - GET /assistant: whether the language model answers now (research R-06). Only an "available"
   answer is cached, so "Check again" always re-checks.

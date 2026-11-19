@@ -1,4 +1,4 @@
-// Shapes returned by the ERP API (see specs/001-erp-core/contracts/erp-api.openapi.yaml).
+// Shapes returned by the ERP API (see contracts/erp/erp-api.openapi.yaml).
 
 export interface Supplier {
   supplier_id: string;

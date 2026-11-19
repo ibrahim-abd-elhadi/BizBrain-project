@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "canonical.PurchaseOrder",
+  "description": "Open = draft (the ERP's statuses are draft and confirmed). open_qty counts toward 'already on order' (D-07). Confirming treats the order as received.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "purchase_order_id",
+    "supplier_id",
+    "status",
+    "lines",
+    "created_by",
+    "approval",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema": {
+      "const": "canonical.PurchaseOrder"
+    },
+    "version": {
+      "$ref": "../common/defs.schema.json#/$defs/schema_version"
+    },
+    "purchase_order_id": {
+      "$ref": "../common/defs.schema.json#/$defs/purchase_order_id"
+    },
+    "supplier_id": {
+      "$ref": "../common/defs.schema.json#/$defs/supplier_id"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "confirmed"
+      ]
+    },
+    "lines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_id",
+          "ordered_qty",
+          "received_qty",
+          "open_qty"
+        ],
+        "properties": {
+          "product_id": {
+            "$ref": "../common/defs.schema.json#/$defs/product_id"
+          },
+          "ordered_qty": {
+            "$ref": "../common/defs.schema.json#/$defs/positive_quantity"
+          },
+          "received_qty": {
+            "$ref": "../common/defs.schema.json#/$defs/non_negative_quantity"
+          },
+          "open_qty": {
+            "$ref": "../common/defs.schema.json#/$defs/non_negative_quantity"
+          }
+        }
+      }
+    },
+    "created_by": {
+      "enum": [
+        "human",
+        "agent"
+      ]
+    },
+    "approval": {
+      "anyOf": [
+        {
+          "$ref": "approval_block.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    },
+    "updated_at": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    }
+  }
+}

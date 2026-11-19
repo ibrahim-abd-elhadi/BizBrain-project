@@ -1,4 +1,4 @@
-"""Proposals for the signed-in manager (feature 004; contracts/brain-api-proposals.openapi.yaml).
+"""Proposals for the signed-in manager (feature 004; contracts/brain/brain-api-proposals.openapi.yaml).
 
 Create, list and read in User Story 1; approve and reject in User Story 2; send again in User
 Story 3. Only `approve` and `send-again` ever reach the ERP (research R-06). Nothing here calls an

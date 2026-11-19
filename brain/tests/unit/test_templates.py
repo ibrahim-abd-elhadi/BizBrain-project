@@ -1,4 +1,4 @@
-"""The Why? templates (contracts/explanation-templates.md; FR-013, FR-014). Written first (T047).
+"""The Why? templates (contracts/assistant/explanation-templates.md; FR-013, FR-014). Written first (T047).
 
 The template is the plain version: built each time from the row's facts, never stored, and what
 the model is asked to rephrase. Every branch renders in English and Arabic and passes the grounding

@@ -187,8 +187,7 @@ def test_a_run_with_no_data_writes_no_briefing(pg, worker_session, scripted, mon
 
 
 CONTRACT = (
-    Path(__file__).resolve().parents[3]
-    / "specs/005-ai-assistant/contracts/brain-api-assistant.openapi.yaml"
+    Path(__file__).resolve().parents[3] / "contracts/assistant/brain-api-assistant.openapi.yaml"
 )
 
 

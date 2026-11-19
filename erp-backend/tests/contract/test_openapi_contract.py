@@ -6,7 +6,7 @@ import yaml
 
 from erp.main import app
 
-CONTRACT = Path(__file__).resolve().parents[3] / "specs/001-erp-core/contracts/erp-api.openapi.yaml"
+CONTRACT = Path(__file__).resolve().parents[3] / "contracts/erp/erp-api.openapi.yaml"
 HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 
 

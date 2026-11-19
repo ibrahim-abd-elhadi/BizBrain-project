@@ -1,4 +1,4 @@
-"""Running the evaluation set and writing its report (FR-023; contracts/evaluation-set.md).
+"""Running the evaluation set and writing its report (FR-023; contracts/assistant/evaluation-set.md).
 
 `run_evaluation` runs every question through the real chat graph, inside one transaction that is
 rolled back at the end, so A08's proposal never stays. Every question is checked for grounding,

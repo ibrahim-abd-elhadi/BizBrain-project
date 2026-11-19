@@ -1,4 +1,4 @@
-"""The evaluation set (FR-023; contracts/evaluation-set.md): ten fixed questions, five in English
+"""The evaluation set (FR-023; contracts/assistant/evaluation-set.md): ten fixed questions, five in English
 and five in Arabic, each with the checks its answer must pass.
 
 Expected facts are computed when the set runs, from the database of that run (the numbers depend on

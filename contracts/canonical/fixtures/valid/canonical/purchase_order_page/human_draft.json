@@ -1,0 +1,35 @@
+{
+  "$schema_ref": "schemas/canonical/purchase_order_page.schema.json",
+  "document": {
+    "schema": "canonical.PurchaseOrderPage",
+    "version": "1.0",
+    "items": [
+      {
+        "schema": "canonical.PurchaseOrder",
+        "version": "1.0",
+        "purchase_order_id": 3,
+        "supplier_id": "S001",
+        "status": "draft",
+        "lines": [
+          {
+            "product_id": "P001",
+            "ordered_qty": 60,
+            "received_qty": 0,
+            "open_qty": 60
+          },
+          {
+            "product_id": "P002",
+            "ordered_qty": 30,
+            "received_qty": 0,
+            "open_qty": 30
+          }
+        ],
+        "created_by": "human",
+        "approval": null,
+        "created_at": "2026-11-18T11:02:05Z",
+        "updated_at": "2026-11-18T11:02:05Z"
+      }
+    ],
+    "next_cursor": null
+  }
+}

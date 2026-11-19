@@ -26,8 +26,7 @@ from scripted_model import Fail, Say
 from series import spike_target
 
 CONTRACT = (
-    Path(__file__).resolve().parents[3]
-    / "specs/005-ai-assistant/contracts/brain-api-assistant.openapi.yaml"
+    Path(__file__).resolve().parents[3] / "contracts/assistant/brain-api-assistant.openapi.yaml"
 )
 
 

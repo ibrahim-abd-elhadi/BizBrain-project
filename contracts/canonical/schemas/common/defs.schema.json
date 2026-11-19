@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shared definitions (DEPI)",
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "product_id": {
+      "type": "string",
+      "pattern": "^P[0-9]{3,}$",
+      "description": "The ERP's readable product ID: P plus at least 3 digits (P001, P1000)."
+    },
+    "supplier_id": {
+      "type": "string",
+      "pattern": "^S[0-9]{3,}$",
+      "description": "The ERP's readable supplier ID: S plus at least 3 digits (S001, S1000)."
+    },
+    "purchase_order_id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The ERP's order number, as the manager sees it."
+    },
+    "instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$",
+      "description": "ISO-8601 UTC instant, always with Z."
+    },
+    "business_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Calendar date in Africa/Cairo, computed by the ERP (D-04)."
+    },
+    "positive_quantity": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Whole units; the ERP stores whole units."
+    },
+    "non_negative_quantity": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Whole units."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "traceparent": {
+      "type": "string",
+      "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$"
+    },
+    "cursor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Opaque; clients must not parse it."
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    }
+  }
+}

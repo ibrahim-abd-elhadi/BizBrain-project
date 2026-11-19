@@ -1,4 +1,4 @@
-"""Why? explanations (research R-09; contracts/explanation-templates.md; FR-013 to FR-014a).
+"""Why? explanations (research R-09; contracts/assistant/explanation-templates.md; FR-013 to FR-014a).
 
 - `row_facts`: one recommendation's stored inputs, plus the values the sentences need, computed
   here (lead_plus_2, cover_days_counted, the spike that raised it);

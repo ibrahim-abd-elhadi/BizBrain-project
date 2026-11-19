@@ -1,4 +1,4 @@
-"""Pydantic models matching specs/002-canonical-api/contracts/schemas/ field for field.
+"""Pydantic models matching contracts/canonical/schemas/ field for field.
 
 Every document carries `schema` and `version` ("1.0") and nothing the contract doesn't define
 (FR-004). Every instant is UTC and ends in Z (FR-005).
@@ -73,7 +73,7 @@ class ErrorBody(CanonicalModel):
     error: ErrorInfo
 
 
-# Sales (US1): contracts/schemas/canonical/daily_sales_total.schema.json and sales_page.schema.json
+# Sales (US1): contracts/canonical/schemas/canonical/daily_sales_total.schema.json and sales_page.schema.json
 
 
 class DailySalesTotal(CanonicalModel):

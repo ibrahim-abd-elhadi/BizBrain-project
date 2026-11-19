@@ -23,7 +23,7 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCHEMAS = REPO_ROOT / "specs/002-canonical-api/contracts/schemas"
+SCHEMAS = REPO_ROOT / "contracts/canonical/schemas"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 BASE_URI = "https://contracts.bizbrain.invalid/schemas/"
 TOKEN = "test-service-token"

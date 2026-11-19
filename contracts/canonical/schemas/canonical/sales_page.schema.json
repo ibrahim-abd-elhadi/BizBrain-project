@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "canonical.SalesPage",
+  "description": "Ordered by (updated_at, product_id, business_date). Every page of one poll carries the same high_watermark: the server time just after the poll's first page was read. Store it only after the last page; the next poll uses updated_since = high_watermark - 120 s (D-05, research R-07).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "items",
+    "next_cursor",
+    "high_watermark"
+  ],
+  "properties": {
+    "schema": {
+      "const": "canonical.SalesPage"
+    },
+    "version": {
+      "$ref": "../common/defs.schema.json#/$defs/schema_version"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "daily_sales_total.schema.json"
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "$ref": "../common/defs.schema.json#/$defs/cursor"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "high_watermark": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    }
+  }
+}

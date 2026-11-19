@@ -16,7 +16,7 @@ NOW = "2026-11-18T10:00"
 TODAY = date(2026, 11, 18)
 HEADER = "business_date,product_id,units_sold,units_returned"
 
-# The example from contracts/sales-upload-csv.md.
+# The example from contracts/erp/sales-upload-csv.md.
 CONTRACT_EXAMPLE = f"""{HEADER}
 2026-11-18,P001,15,1
 2026-11-18,P002,7,0

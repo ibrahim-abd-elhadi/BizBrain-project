@@ -1,4 +1,4 @@
-"""The grounding guard (research R-04; contracts/assistant-tools.md). Written first (T005).
+"""The grounding guard (research R-04; contracts/assistant/assistant-tools.md). Written first (T005).
 
 Every number, ISO date and product or supplier ID in a generated text must appear in the data the
 Brain supplied (D-18, FR-015).

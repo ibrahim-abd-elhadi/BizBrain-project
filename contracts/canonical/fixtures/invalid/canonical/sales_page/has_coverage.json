@@ -1,0 +1,15 @@
+{
+  "$schema_ref": "schemas/canonical/sales_page.schema.json",
+  "document": {
+    "schema": "canonical.SalesPage",
+    "version": "1.0",
+    "items": [],
+    "next_cursor": null,
+    "high_watermark": "2026-11-18T10:20:00Z",
+    "coverage": {
+      "from": "2026-11-17",
+      "to": "2026-11-18",
+      "incomplete_dates": []
+    }
+  }
+}

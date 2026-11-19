@@ -1,4 +1,4 @@
-"""The five read tools and the catalog block (contracts/assistant-tools.md). Written first (T021).
+"""The five read tools and the catalog block (contracts/assistant/assistant-tools.md). Written first (T021).
 
 Brain-data tools read brain_db through the api login; stock and open orders are read live from
 the (fake) Canonical API. Every total, count and filter is computed here, in code (D-18).

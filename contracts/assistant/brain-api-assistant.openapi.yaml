@@ -1,0 +1,246 @@
+openapi: 3.1.0
+info:
+  title: BizBrain Brain API (feature 005, assistant, briefing and Why?)
+  version: 1.0.0
+  description: |
+    Adds the generative part of README Section 4.6 to feature 003's and 004's API
+    (specs/003-brain-intelligence/contracts/brain-api.openapi.yaml,
+    specs/004-approval-flow/contracts/brain-api-proposals.openapi.yaml). Every call needs the
+    pharmacy manager's ERP login token, checked as in feature 003. Errors use the {"detail", "code"}
+    shape. Nothing here runs a worker job (D-38) or writes to the ERP: the chat can only create a
+    proposal through feature 004's create function. Every number in a generated text has passed
+    the grounding check (research R-04). All data is synthetic; every body carries synthetic: true.
+    The language model being unreachable is not an HTTP error: it is reported in the body
+    (outcome "offline", state "offline", source "template").
+servers:
+  - url: /api/v1/brain
+security:
+  - managerToken: []
+
+paths:
+  /assistant:
+    get:
+      operationId: getAssistantAvailability
+      summary: Whether the language model answers now (only an "available" answer is cached, 30 s; research R-06)
+      description: |
+        Reports only the language model's reachability. It is not a pipeline status endpoint: it
+        says nothing about jobs, data or freshness (README Section 7). After a real call got 429
+        or a 5xx, it answers offline for 30 s without probing; recheck=true ("Check again")
+        always probes.
+      parameters:
+        - name: recheck
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: Availability
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Availability' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /assistant/messages:
+    post:
+      operationId: sendAssistantMessage
+      summary: One chat turn over the open conversation (not stored; FR-021)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatRequest' }
+      responses:
+        '200':
+          description: The turn's outcome (answered, not_grounded or offline)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatReply' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /briefing:
+    get:
+      operationId: getBriefing
+      summary: The briefing of the newest succeeded end-of-day run
+      responses:
+        '200':
+          description: The briefing, "offline" or "none"
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Briefing' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /explanations/{recommendation_id}:
+    get:
+      operationId: getExplanation
+      summary: Why? for one recommendation, kept text or model-phrased or template
+      parameters:
+        - name: recommendation_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: language
+          in: query
+          required: true
+          schema: { enum: [en, ar] }
+      responses:
+        '200':
+          description: The explanation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Explanation' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+components:
+  securitySchemes:
+    managerToken: { type: http, scheme: bearer, bearerFormat: JWT (EdDSA, the ERP's login token) }
+
+  responses:
+    Unauthenticated:
+      description: No token, an invalid token, or not the manager's token
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: No such recommendation
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: A malformed id, query or body (too many messages, a message too long, the last one not the manager's)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    Error:
+      type: object
+      required: [detail, code]
+      properties:
+        detail: { type: string }
+        code: { enum: [UNAUTHENTICATED, NOT_FOUND, VALIDATION_ERROR] }
+
+    Language: { enum: [en, ar] }
+
+    OfflineReason:
+      enum: [no_key, unreachable, timeout, key_refused, model_not_found, rate_limited, server_error, refused]
+
+    Availability:
+      type: object
+      additionalProperties: false
+      required: [synthetic, available, reason]
+      properties:
+        synthetic: { const: true }
+        available: { type: boolean }
+        reason:
+          description: null when available
+          oneOf: [{ $ref: '#/components/schemas/OfflineReason' }, { type: 'null' }]
+
+    ChatMessage:
+      type: object
+      additionalProperties: false
+      required: [role, text]
+      properties:
+        role: { enum: [manager, assistant] }
+        text: { type: string, minLength: 1, maxLength: 2000 }
+        language:
+          description: The language the API returned for an assistant message
+          $ref: '#/components/schemas/Language'
+
+    ChatRequest:
+      type: object
+      additionalProperties: false
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          minItems: 1
+          maxItems: 20
+          description: The open conversation, oldest first; the last message is the manager's
+          items: { $ref: '#/components/schemas/ChatMessage' }
+
+    ProposalLine:
+      type: object
+      additionalProperties: false
+      required: [product_id, product_name, quantity]
+      properties:
+        product_id: { type: string, pattern: '^P[0-9]{3,}$' }
+        product_name: { type: string }
+        quantity: { type: integer, minimum: 1 }
+
+    ChatProposal:
+      type: object
+      additionalProperties: false
+      required: [id, path, status, origin, supplier_id, supplier_name, lines]
+      properties:
+        id: { type: string, format: uuid }
+        path: { type: string, description: '/brain/proposals/{id}, the Proposals screen' }
+        status: { const: awaiting_approval }
+        origin: { const: assistant }
+        supplier_id: { type: string, pattern: '^S[0-9]{3,}$' }
+        supplier_name: { type: string }
+        lines: { type: array, minItems: 1, items: { $ref: '#/components/schemas/ProposalLine' } }
+
+    ChatRefusal:
+      type: object
+      additionalProperties: false
+      required: [code, detail]
+      properties:
+        code:
+          enum: [PROPOSAL_PENDING, VALIDATION_ERROR, QUANTITY_NOT_GIVEN, NO_RECOMMENDED_QUANTITY, NO_RESULTS, UNKNOWN_PRODUCT, DIFFERENT_SUPPLIERS]
+        detail: { type: string }
+        live_proposal_id: { type: [string, 'null'], format: uuid }
+        path: { type: [string, 'null'], description: the live proposal on the Proposals screen }
+
+    ChatReply:
+      type: object
+      additionalProperties: false
+      required: [synthetic, outcome, reply, proposal, refusal]
+      properties:
+        synthetic: { const: true }
+        outcome:
+          enum: [answered, not_grounded, offline]
+          description: |
+            answered: reply passed grounding. not_grounded: two failed checks; reply is the fixed
+            "couldn't answer reliably" sentence, or the fixed proposal sentence when this turn
+            created one. offline: model unreachable, too slow, or key missing/refused; reply is null.
+        offline_reason:
+          oneOf: [{ $ref: '#/components/schemas/OfflineReason' }, { type: 'null' }]
+        reply:
+          oneOf:
+            - type: 'null'
+            - type: object
+              additionalProperties: false
+              required: [text, language]
+              properties:
+                text: { type: string, minLength: 1 }
+                language: { $ref: '#/components/schemas/Language' }
+        proposal:
+          description: Created in this turn; shown as a card linking to the Proposals screen, also when outcome is offline
+          oneOf: [{ $ref: '#/components/schemas/ChatProposal' }, { type: 'null' }]
+        refusal:
+          oneOf: [{ $ref: '#/components/schemas/ChatRefusal' }, { type: 'null' }]
+
+    Briefing:
+      type: object
+      additionalProperties: false
+      required: [synthetic, state, night, run_finished_at, text_en, text_ar]
+      properties:
+        synthetic: { const: true }
+        state:
+          enum: [none, offline, written]
+          description: none = no end-of-day run yet (or it found no data); offline = that night's briefing could not be written (model unreachable or not grounded); written = both texts
+        night: { type: [string, 'null'], format: date }
+        run_finished_at: { type: [string, 'null'], format: date-time }
+        text_en: { type: [string, 'null'] }
+        text_ar: { type: [string, 'null'] }
+
+    Explanation:
+      type: object
+      additionalProperties: false
+      required: [synthetic, recommendation_id, product_id, language, source, text]
+      properties:
+        synthetic: { const: true }
+        recommendation_id: { type: string, format: uuid }
+        product_id: { type: string }
+        language: { $ref: '#/components/schemas/Language' }
+        source:
+          enum: [assistant, template]
+          description: assistant = model-phrased and kept; template = the plain version, built now, never stored
+        text: { type: string, minLength: 1 }

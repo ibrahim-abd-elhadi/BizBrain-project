@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "canonical.Supplier",
+  "description": "Supplier lead time. The main plan's active flag is dropped (spec FR-021).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "supplier_id",
+    "name",
+    "lead_time_days",
+    "updated_at"
+  ],
+  "properties": {
+    "schema": {
+      "const": "canonical.Supplier"
+    },
+    "version": {
+      "$ref": "../common/defs.schema.json#/$defs/schema_version"
+    },
+    "supplier_id": {
+      "$ref": "../common/defs.schema.json#/$defs/supplier_id"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "lead_time_days": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 365
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "updated_at": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    }
+  }
+}

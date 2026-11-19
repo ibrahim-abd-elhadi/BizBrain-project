@@ -1,4 +1,4 @@
-"""The grounding guard (research R-04; contracts/assistant-tools.md; D-18, FR-015).
+"""The grounding guard (research R-04; contracts/assistant/assistant-tools.md; D-18, FR-015).
 
 Pure code, no model and no I/O. `Allowed.from_facts` collects every number (by value), ISO date
 and product or supplier ID in the data the Brain supplied; `check` finds every such token in a

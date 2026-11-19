@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "canonical.Product",
+  "description": "The fields the order formula needs (D-21). The main plan's sku, unit and active are dropped: the ERP holds no such data (spec FR-021). null means unknown; this ERP always sends values.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "product_id",
+    "name",
+    "preferred_supplier_id",
+    "pack_multiple",
+    "max_order_qty",
+    "updated_at"
+  ],
+  "properties": {
+    "schema": {
+      "const": "canonical.Product"
+    },
+    "version": {
+      "$ref": "../common/defs.schema.json#/$defs/schema_version"
+    },
+    "product_id": {
+      "$ref": "../common/defs.schema.json#/$defs/product_id"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "preferred_supplier_id": {
+      "anyOf": [
+        {
+          "$ref": "../common/defs.schema.json#/$defs/supplier_id"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pack_multiple": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "max_order_qty": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "updated_at": {
+      "$ref": "../common/defs.schema.json#/$defs/instant"
+    }
+  }
+}

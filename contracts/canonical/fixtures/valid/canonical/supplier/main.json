@@ -1,0 +1,11 @@
+{
+  "$schema_ref": "schemas/canonical/supplier.schema.json",
+  "document": {
+    "schema": "canonical.Supplier",
+    "version": "1.0",
+    "supplier_id": "S004",
+    "name": "Delta Health Trading",
+    "lead_time_days": 7,
+    "updated_at": "2026-11-01T00:00:00Z"
+  }
+}

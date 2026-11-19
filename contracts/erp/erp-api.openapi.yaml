@@ -1,0 +1,524 @@
+openapi: 3.1.0
+info:
+  title: BizBrain ERP API (feature 001, ERP core)
+  version: 0.1.0
+  description: |
+    The ERP's own API, used only by the ERP screens. It is NOT the Canonical API: that lives
+    under /api/v1/canonical/* and is added in feature 002.
+
+    Every endpoint except POST /auth/login needs `Authorization: Bearer <token>` (FR-002).
+    All data is synthetic. Errors use the Error schema; `code` values are listed below.
+    Any route called with an HTTP method it doesn't support returns 405 with
+    code = METHOD_NOT_ALLOWED (there are no DELETE operations).
+servers:
+  - url: /api/v1/erp
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: Sign in as the pharmacy manager and receive a signed bearer token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401': { $ref: '#/components/responses/InvalidCredentials' }
+
+  /auth/me:
+    get:
+      summary: The signed-in manager
+      responses:
+        '200':
+          description: Current manager
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [username]
+                properties: { username: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /suppliers:
+    get:
+      summary: List suppliers
+      responses:
+        '200':
+          description: All suppliers
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Supplier' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      summary: Create a supplier (the ERP assigns supplier_id)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SupplierCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Supplier' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /suppliers/{supplier_id}:
+    parameters:
+      - { name: supplier_id, in: path, required: true, schema: { type: string, pattern: '^S[0-9]{3,}$' } }
+    get:
+      summary: One supplier
+      responses:
+        '200':
+          description: Supplier
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Supplier' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Edit a supplier (supplier_id can't change; there is no DELETE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SupplierUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Supplier' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /products:
+    get:
+      summary: List products
+      responses:
+        '200':
+          description: All products
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      summary: Create a product (the ERP assigns product_id and creates its stock row)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /products/{product_id}:
+    parameters:
+      - { name: product_id, in: path, required: true, schema: { type: string, pattern: '^P[0-9]{3,}$' } }
+    get:
+      summary: One product
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Edit a product (product_id can't change; there is no DELETE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductUpdate' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /inventory:
+    get:
+      summary: Stock for every product at the one location
+      responses:
+        '200':
+          description: Stock rows
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/StockRow' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /inventory/{product_id}:
+    parameters:
+      - { name: product_id, in: path, required: true, schema: { type: string, pattern: '^P[0-9]{3,}$' } }
+    put:
+      summary: Set a product's stock by hand (FR-005)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [on_hand]
+              properties: { on_hand: { type: integer, minimum: 0 } }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StockRow' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /sales:
+    get:
+      summary: Daily totals per product and business date, with day status (FR-020)
+      description: Runs the "close past days" step first (research R-14).
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string, format: date }, description: 'Default: today_cairo minus 90 days (covers 90 closed days plus today)' }
+        - { name: to, in: query, required: false, schema: { type: string, format: date }, description: 'Default: today_cairo' }
+        - { name: product_id, in: query, required: false, schema: { type: string, pattern: '^P[0-9]{3,}$' } }
+      responses:
+        '200':
+          description: Daily totals, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [today, items]
+                properties:
+                  today: { type: string, format: date, description: Current business date in Africa/Cairo }
+                  items: { type: array, items: { $ref: '#/components/schemas/DailyTotal' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /sales/simulate:
+    post:
+      summary: Simulate Sales - add a realistic batch to today's totals, with an optional spike
+      description: |
+        Adds to today's totals only (FR-011). The batch never pushes stock below 0 (FR-023).
+        With spike_product_id, that product's net units for today reach at least
+        ceil(mean28 + z * sd28), capped by stock (FR-012, research R-16).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                spike_product_id: { type: [string, 'null'], pattern: '^P[0-9]{3,}$' }
+      responses:
+        '200':
+          description: Batch applied
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimulateResult' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: 'Nothing applied. code = SPIKE_NEEDS_HISTORY (the product has fewer than 28 closed days)'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /sales/upload:
+    post:
+      summary: Upload CSV - replace today's totals from a file (FR-013, FR-014, FR-026)
+      description: |
+        Format: see sales-upload-csv.md. Valid rows are applied in one transaction; refused and
+        overridden rows are reported with their line numbers. A bad header refuses the whole file.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: File processed (some rows may be refused)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadResult' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422':
+          description: 'Whole file refused; nothing recorded. code = BAD_HEADER | FILE_TOO_LARGE | TOO_MANY_ROWS | NOT_UTF8 | EMPTY_FILE'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /purchase-orders:
+    get:
+      summary: List purchase orders with status (FR-018)
+      parameters:
+        - { name: status, in: query, required: false, schema: { type: string, enum: [draft, confirmed] } }
+      responses:
+        '200':
+          description: Purchase orders, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PurchaseOrder' } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /purchase-orders/{po_id}:
+    parameters:
+      - { name: po_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    get:
+      summary: One purchase order
+      responses:
+        '200':
+          description: Purchase order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseOrder' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /purchase-orders/{po_id}/confirm:
+    parameters:
+      - { name: po_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    post:
+      summary: Confirm a draft; adds its line quantities to stock (FR-016, FR-017, FR-024)
+      description: Confirming an already-confirmed order returns it unchanged and adds no stock.
+      responses:
+        '200':
+          description: The order, now confirmed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseOrder' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT (EdDSA/Ed25519; iss=bizbrain-erp, aud=bizbrain)
+
+  responses:
+    Unauthenticated:
+      description: 'Missing, invalid or expired token. code = UNAUTHENTICATED'
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    InvalidCredentials:
+      description: 'Wrong username or password. code = INVALID_CREDENTIALS'
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: 'code = NOT_FOUND'
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: 'code = VALIDATION_ERROR | SUPPLIER_NOT_FOUND | MAX_BELOW_PACK'
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    MethodNotAllowed:
+      description: 'HTTP method not supported on this path (for example DELETE). code = METHOD_NOT_ALLOWED'
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    Error:
+      type: object
+      required: [detail, code]
+      properties:
+        detail: { type: string, description: Human-readable message shown to the manager }
+        code: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, minLength: 1 }
+        password: { type: string, minLength: 1 }
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_at]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, const: bearer }
+        expires_at: { type: string, format: date-time }
+
+    Supplier:
+      type: object
+      required: [supplier_id, name, lead_time_days]
+      properties:
+        supplier_id: { type: string, pattern: '^S[0-9]{3,}$' }
+        name: { type: string }
+        lead_time_days: { type: integer, minimum: 1 }
+    SupplierCreate:
+      type: object
+      required: [name, lead_time_days]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        lead_time_days: { type: integer, minimum: 1 }
+    SupplierUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        lead_time_days: { type: integer, minimum: 1 }
+
+    Product:
+      type: object
+      required: [product_id, name, preferred_supplier_id, pack_multiple, max_order_qty]
+      properties:
+        product_id: { type: string, pattern: '^P[0-9]{3,}$' }
+        name: { type: string }
+        preferred_supplier_id: { type: string, pattern: '^S[0-9]{3,}$' }
+        pack_multiple: { type: integer, minimum: 1 }
+        max_order_qty: { type: integer, minimum: 1, description: Must be >= pack_multiple }
+    ProductCreate:
+      type: object
+      required: [name, preferred_supplier_id, pack_multiple, max_order_qty]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        preferred_supplier_id: { type: string, pattern: '^S[0-9]{3,}$' }
+        pack_multiple: { type: integer, minimum: 1 }
+        max_order_qty: { type: integer, minimum: 1 }
+        starting_stock: { type: integer, minimum: 0, default: 0 }
+    ProductUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        preferred_supplier_id: { type: string, pattern: '^S[0-9]{3,}$' }
+        pack_multiple: { type: integer, minimum: 1 }
+        max_order_qty: { type: integer, minimum: 1 }
+
+    StockRow:
+      type: object
+      required: [product_id, name, on_hand, updated_at]
+      properties:
+        product_id: { type: string }
+        name: { type: string }
+        on_hand: { type: integer, minimum: 0 }
+        updated_at: { type: string, format: date-time }
+
+    DailyTotal:
+      type: object
+      required: [product_id, business_date, units_sold, units_returned, net_units, day_status]
+      properties:
+        product_id: { type: string }
+        business_date: { type: string, format: date }
+        units_sold: { type: integer, minimum: 0 }
+        units_returned: { type: integer, minimum: 0 }
+        net_units: { type: integer }
+        day_status: { type: string, enum: [open, closed] }
+
+    SimulateResult:
+      type: object
+      required: [business_date, products, spike]
+      properties:
+        business_date: { type: string, format: date }
+        products:
+          type: array
+          items:
+            type: object
+            required: [product_id, units_sold_added, units_returned_added, capped_by_stock]
+            properties:
+              product_id: { type: string }
+              units_sold_added: { type: integer, minimum: 0 }
+              units_returned_added: { type: integer, minimum: 0 }
+              capped_by_stock: { type: boolean }
+        spike:
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [product_id, target_net_units, achieved_net_units, capped_by_stock]
+              properties:
+                product_id: { type: string }
+                target_net_units: { type: integer }
+                achieved_net_units: { type: integer }
+                capped_by_stock: { type: boolean, description: 'true -> the manager is told the spike was capped' }
+
+    UploadResult:
+      type: object
+      required: [business_date, accepted, refused, overridden]
+      properties:
+        business_date: { type: string, format: date, description: Today in Africa/Cairo; the only date accepted }
+        accepted:
+          type: array
+          items:
+            type: object
+            required: [row, product_id]
+            properties:
+              row: { type: integer, description: Line number in the file (header = 1) }
+              product_id: { type: string }
+        refused:
+          type: array
+          items:
+            type: object
+            required: [row, code, detail]
+            properties:
+              row: { type: integer }
+              code:
+                type: string
+                enum: [WRONG_COLUMN_COUNT, BAD_DATE_FORMAT, DAY_CLOSED, FUTURE_DATE, UNKNOWN_PRODUCT, BAD_UNITS, STOCK_BELOW_ZERO]
+              detail: { type: string }
+        overridden:
+          type: array
+          description: Earlier duplicate rows for the same product and date (FR-026)
+          items:
+            type: object
+            required: [row, overridden_by_row]
+            properties:
+              row: { type: integer }
+              overridden_by_row: { type: integer }
+
+    PurchaseOrder:
+      type: object
+      description: >
+        A purchase order. Drafts come from the Brain through the Canonical API (feature 002,
+        created_by = agent, with the approval block) or by hand for testing (human).
+      required: [po_id, status, supplier_id, created_by, approval, created_at, updated_at, confirmed_at, lines]
+      properties:
+        po_id: { type: integer, minimum: 1 }
+        status: { type: string, enum: [draft, confirmed] }
+        supplier_id: { type: string, pattern: '^S[0-9]{3,}$', description: 'Feature 002: every order has one supplier' }
+        created_by: { type: string, enum: [human, agent], description: 'Feature 002: agent = created by the Brain' }
+        approval:
+          description: 'Feature 002: the approval block a Brain draft carries; null for a human order'
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [proposal_id, approved_by, approved_at, arguments_sha256]
+              properties:
+                proposal_id: { type: string, format: uuid }
+                approved_by: { type: string, minLength: 1, maxLength: 128 }
+                approved_at: { type: string, format: date-time }
+                arguments_sha256: { type: string, pattern: '^[0-9a-f]{64}$' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time, description: 'Feature 002: set on create and on confirm' }
+        confirmed_at: { type: [string, 'null'], format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [product_id, quantity]
+            properties:
+              product_id: { type: string, pattern: '^P[0-9]{3,}$' }
+              quantity: { type: integer, minimum: 1 }

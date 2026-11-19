@@ -1,4 +1,4 @@
-"""propose_purchase_order through the chat (research R-08; contracts/assistant-tools.md).
+"""propose_purchase_order through the chat (research R-08; contracts/assistant/assistant-tools.md).
 Written first (T032).
 
 The tool creates a feature 004 proposal with origin "assistant": the supplier is always the

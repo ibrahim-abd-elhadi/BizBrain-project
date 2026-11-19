@@ -1,5 +1,5 @@
 """GET /api/v1/brain/risk: the newest risk result per product, highest risk first (FR-029;
-contracts/brain-api.openapi.yaml). Reads only tables the api login may read."""
+contracts/brain/brain-api.openapi.yaml). Reads only tables the api login may read."""
 
 from decimal import Decimal
 from typing import Any

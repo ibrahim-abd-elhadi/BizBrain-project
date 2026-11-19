@@ -1,0 +1,14 @@
+{
+  "$schema_ref": "schemas/canonical/daily_sales_total.schema.json",
+  "document": {
+    "schema": "canonical.DailySalesTotal",
+    "version": "1.0",
+    "product_id": "P003",
+    "business_date": "2026-11-17",
+    "units_sold": 26,
+    "units_returned": 2,
+    "net_units": 24,
+    "day_status": "complete",
+    "updated_at": "2026-11-17T22:00:03Z"
+  }
+}

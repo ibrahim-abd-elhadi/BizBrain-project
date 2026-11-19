@@ -1,0 +1,13 @@
+{
+  "$schema_ref": "schemas/canonical/product.schema.json",
+  "document": {
+    "schema": "canonical.Product",
+    "version": "1.0",
+    "product_id": "P021",
+    "name": "New product",
+    "preferred_supplier_id": null,
+    "pack_multiple": null,
+    "max_order_qty": null,
+    "updated_at": "2026-11-17T08:00:00Z"
+  }
+}

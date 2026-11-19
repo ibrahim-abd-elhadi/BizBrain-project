@@ -1,0 +1,13 @@
+{
+  "$schema_ref": "schemas/canonical/product.schema.json",
+  "document": {
+    "schema": "canonical.Product",
+    "version": "1.0",
+    "product_id": "b3f1c2a0-4e51-4a2e-9d3e-000000000001",
+    "name": "Amoxicillin 500 mg capsules",
+    "preferred_supplier_id": "S004",
+    "pack_multiple": 12,
+    "max_order_qty": 240,
+    "updated_at": "2026-11-17T08:00:00Z"
+  }
+}

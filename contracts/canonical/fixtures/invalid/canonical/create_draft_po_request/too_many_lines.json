@@ -1,0 +1,218 @@
+{
+  "$schema_ref": "schemas/canonical/create_draft_po_request.schema.json",
+  "document": {
+    "supplier_id": "S004",
+    "lines": [
+      {
+        "product_id": "P001",
+        "quantity": 1
+      },
+      {
+        "product_id": "P002",
+        "quantity": 1
+      },
+      {
+        "product_id": "P003",
+        "quantity": 1
+      },
+      {
+        "product_id": "P004",
+        "quantity": 1
+      },
+      {
+        "product_id": "P005",
+        "quantity": 1
+      },
+      {
+        "product_id": "P006",
+        "quantity": 1
+      },
+      {
+        "product_id": "P007",
+        "quantity": 1
+      },
+      {
+        "product_id": "P008",
+        "quantity": 1
+      },
+      {
+        "product_id": "P009",
+        "quantity": 1
+      },
+      {
+        "product_id": "P010",
+        "quantity": 1
+      },
+      {
+        "product_id": "P011",
+        "quantity": 1
+      },
+      {
+        "product_id": "P012",
+        "quantity": 1
+      },
+      {
+        "product_id": "P013",
+        "quantity": 1
+      },
+      {
+        "product_id": "P014",
+        "quantity": 1
+      },
+      {
+        "product_id": "P015",
+        "quantity": 1
+      },
+      {
+        "product_id": "P016",
+        "quantity": 1
+      },
+      {
+        "product_id": "P017",
+        "quantity": 1
+      },
+      {
+        "product_id": "P018",
+        "quantity": 1
+      },
+      {
+        "product_id": "P019",
+        "quantity": 1
+      },
+      {
+        "product_id": "P020",
+        "quantity": 1
+      },
+      {
+        "product_id": "P021",
+        "quantity": 1
+      },
+      {
+        "product_id": "P022",
+        "quantity": 1
+      },
+      {
+        "product_id": "P023",
+        "quantity": 1
+      },
+      {
+        "product_id": "P024",
+        "quantity": 1
+      },
+      {
+        "product_id": "P025",
+        "quantity": 1
+      },
+      {
+        "product_id": "P026",
+        "quantity": 1
+      },
+      {
+        "product_id": "P027",
+        "quantity": 1
+      },
+      {
+        "product_id": "P028",
+        "quantity": 1
+      },
+      {
+        "product_id": "P029",
+        "quantity": 1
+      },
+      {
+        "product_id": "P030",
+        "quantity": 1
+      },
+      {
+        "product_id": "P031",
+        "quantity": 1
+      },
+      {
+        "product_id": "P032",
+        "quantity": 1
+      },
+      {
+        "product_id": "P033",
+        "quantity": 1
+      },
+      {
+        "product_id": "P034",
+        "quantity": 1
+      },
+      {
+        "product_id": "P035",
+        "quantity": 1
+      },
+      {
+        "product_id": "P036",
+        "quantity": 1
+      },
+      {
+        "product_id": "P037",
+        "quantity": 1
+      },
+      {
+        "product_id": "P038",
+        "quantity": 1
+      },
+      {
+        "product_id": "P039",
+        "quantity": 1
+      },
+      {
+        "product_id": "P040",
+        "quantity": 1
+      },
+      {
+        "product_id": "P041",
+        "quantity": 1
+      },
+      {
+        "product_id": "P042",
+        "quantity": 1
+      },
+      {
+        "product_id": "P043",
+        "quantity": 1
+      },
+      {
+        "product_id": "P044",
+        "quantity": 1
+      },
+      {
+        "product_id": "P045",
+        "quantity": 1
+      },
+      {
+        "product_id": "P046",
+        "quantity": 1
+      },
+      {
+        "product_id": "P047",
+        "quantity": 1
+      },
+      {
+        "product_id": "P048",
+        "quantity": 1
+      },
+      {
+        "product_id": "P049",
+        "quantity": 1
+      },
+      {
+        "product_id": "P050",
+        "quantity": 1
+      },
+      {
+        "product_id": "P051",
+        "quantity": 1
+      }
+    ],
+    "approval": {
+      "proposal_id": "a9000000-0000-4000-8000-000000000001",
+      "approved_by": "manager",
+      "approved_at": "2026-11-18T11:02:00Z",
+      "arguments_sha256": "d67ad9758d7806f685b4294e16a538f84157456e2de40b23aa5ca9c6993b57ce"
+    }
+  }
+}

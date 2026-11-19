@@ -1,0 +1,12 @@
+{
+  "$schema_ref": "schemas/canonical/inventory_item.schema.json",
+  "document": {
+    "schema": "canonical.InventoryItem",
+    "version": "1.0",
+    "product_id": "P003",
+    "on_hand": 60,
+    "available": 60,
+    "updated_at": "2026-11-18T10:16:33Z",
+    "location_id": "1c0a0000-0000-4000-8000-000000000001"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "canonical.PurchaseOrderPage",
+  "description": "Open purchase orders, by order number.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "schema": {
+      "const": "canonical.PurchaseOrderPage"
+    },
+    "version": {
+      "$ref": "../common/defs.schema.json#/$defs/schema_version"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "purchase_order.schema.json"
+      }
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "$ref": "../common/defs.schema.json#/$defs/cursor"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

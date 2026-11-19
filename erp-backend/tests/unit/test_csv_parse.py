@@ -1,4 +1,4 @@
-"""CSV parsing and row checks (contracts/sales-upload-csv.md). Written before the implementation."""
+"""CSV parsing and row checks (contracts/erp/sales-upload-csv.md). Written before the implementation."""
 
 from datetime import date
 

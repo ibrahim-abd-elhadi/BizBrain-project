@@ -59,6 +59,6 @@ def simulate_sales(
 
 @router.post("/upload", response_model=UploadResult)
 def upload_sales(file: UploadFile, session: SessionDep) -> UploadResult:
-    """Replaces today's totals from a CSV. Format: contracts/sales-upload-csv.md."""
+    """Replaces today's totals from a CSV. Format: contracts/erp/sales-upload-csv.md."""
     data = file.file.read(MAX_BYTES + 1)  # one byte more than allowed is enough to refuse it
     return process_upload(session, data)

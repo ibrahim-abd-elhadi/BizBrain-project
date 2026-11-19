@@ -1,0 +1,160 @@
+openapi: 3.1.0
+info:
+  title: BizBrain Canonical API (feature 002)
+  version: 1.0.0
+  description: |
+    Adapted from the main Business Brain plan's contracts/openapi/canonical.openapi.yaml for the
+    DEPI version (README Section 3): no tenants, organizations or branches; one location; readable
+    product and supplier IDs; no `complete` flag. Every change is listed in contracts/README.md.
+
+    Served by erp-backend and called only by the Brain. Every request needs the Brain's service
+    token as `Authorization: Bearer <token>`: an EdDSA JWT with iss=bizbrain-erp,
+    aud=bizbrain-canonical, sub=brain and the scopes below (research R-02). The pharmacy manager's
+    login token (aud=bizbrain) is refused with 401. The four reads need `canonical:read`; creating
+    a draft needs `canonical:po:create_draft` (403 otherwise).
+
+    An optional W3C `traceparent` header sets the `trace_id` returned in errors (research R-06).
+    Errors use common/error.schema.json; VALIDATION_ERROR is HTTP 422 (research R-05).
+servers:
+  - url: http://erp-backend:8000
+    description: Inside the local Docker Compose network
+security:
+  - serviceToken: []
+
+paths:
+  /api/v1/canonical/sales:
+    get:
+      operationId: getDailySales
+      summary: Daily sales totals changed since a watermark (README Sections 3.1 and 3.2)
+      description: |
+        Absolute daily totals per (product_id, business_date), ordered by
+        (updated_at, product_id, business_date). from/to are inclusive Cairo business dates;
+        updated_since is an exclusive UTC instant (D-05). Past days are closed before a poll's
+        first page is read, so a day closing at 00:00 Cairo appears as a change (spec FR-015).
+
+        Every page of one poll carries the same high_watermark (the server time just after the
+        first page was read). Save it after the last page; the next poll asks for
+        updated_since = high_watermark - 120 s (research R-07).
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, format: date}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date}}
+        - {name: updated_since, in: query, required: false, schema: {type: string, format: date-time}, description: 'Exclusive. Must include a time zone (Z or an offset).'}
+        - {$ref: '#/components/parameters/Cursor'}
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Traceparent'}
+      responses:
+        '200': {description: One page, content: {application/json: {schema: {$ref: '../schemas/canonical/sales_page.schema.json'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+
+  /api/v1/canonical/products/{product_id}:
+    get:
+      operationId: getProduct
+      summary: Preferred supplier, pack multiple and maximum order quantity
+      parameters:
+        - {$ref: '#/components/parameters/ProductId'}
+        - {$ref: '#/components/parameters/Traceparent'}
+      responses:
+        '200': {description: Product, content: {application/json: {schema: {$ref: '../schemas/canonical/product.schema.json'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+
+  /api/v1/canonical/inventory/{product_id}:
+    get:
+      operationId: getInventoryItem
+      summary: Available stock at the pharmacy's one location
+      description: available = on_hand; the ERP holds no reservations. There is no location field.
+      parameters:
+        - {$ref: '#/components/parameters/ProductId'}
+        - {$ref: '#/components/parameters/Traceparent'}
+      responses:
+        '200': {description: Stock, content: {application/json: {schema: {$ref: '../schemas/canonical/inventory_item.schema.json'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+
+  /api/v1/canonical/suppliers/{supplier_id}:
+    get:
+      operationId: getSupplier
+      summary: Supplier lead time
+      parameters:
+        - {name: supplier_id, in: path, required: true, schema: {type: string, pattern: '^S[0-9]{3,}$'}}
+        - {$ref: '#/components/parameters/Traceparent'}
+      responses:
+        '200': {description: Supplier, content: {application/json: {schema: {$ref: '../schemas/canonical/supplier.schema.json'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+
+  /api/v1/canonical/purchase-orders:
+    get:
+      operationId: listOpenPurchaseOrders
+      summary: Open purchase orders, read live when a recommendation is made (D-07)
+      description: Open = draft, the ERP's only status before confirmation. With product_id, only orders that have a line for that product; each order is returned whole. Listed by order number.
+      parameters:
+        - {name: status, in: query, required: true, schema: {const: open}}
+        - {name: product_id, in: query, required: false, schema: {type: string, pattern: '^P[0-9]{3,}$'}}
+        - {$ref: '#/components/parameters/Cursor'}
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Traceparent'}
+      responses:
+        '200': {description: One page, content: {application/json: {schema: {$ref: '../schemas/canonical/purchase_order_page.schema.json'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+    post:
+      operationId: createDraftPurchaseOrder
+      summary: Create a DRAFT purchase order after the manager's approval (README Section 4.5)
+      description: |
+        Creates a draft only; it doesn't change stock, and the manager confirms it in the ERP.
+        Idempotency-Key must equal approval.proposal_id. The same key with the same body returns
+        the original 201 response with status 200; the same key with a different body returns
+        409 IDEMPOTENCY_CONFLICT. "Same body" means the same JSON content (field order and
+        whitespace don't matter). A refused request doesn't bind its key. Keys are never deleted
+        in normal use (D-09).
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, format: uuid}}
+        - {$ref: '#/components/parameters/Traceparent'}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '../schemas/canonical/create_draft_po_request.schema.json'}}}
+      responses:
+        '201': {description: Draft created, content: {application/json: {schema: {$ref: '../schemas/canonical/purchase_order.schema.json'}}}}
+        '200': {description: Replay of an earlier identical request (the original body), content: {application/json: {schema: {$ref: '../schemas/canonical/purchase_order.schema.json'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/IdempotencyConflict'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT (EdDSA; iss=bizbrain-erp, aud=bizbrain-canonical, sub=brain, scope)
+  parameters:
+    ProductId: {name: product_id, in: path, required: true, schema: {type: string, pattern: '^P[0-9]{3,}$'}}
+    Cursor: {name: cursor, in: query, required: false, schema: {type: string, minLength: 1, maxLength: 512}, description: 'Opaque and signed. Refused if tampered with or reused with different filters.'}
+    Limit: {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 500, default: 200}}
+    Traceparent: {name: traceparent, in: header, required: false, schema: {type: string, pattern: '^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$'}}
+  responses:
+    Unauthorized:
+      description: 'No token, an invalid or expired token, or a token for another audience (such as the manager''s). code = UNAUTHORIZED'
+      content: {application/json: {schema: {$ref: '../schemas/common/error.schema.json'}}}
+    Forbidden:
+      description: 'A valid service token without the scope this operation needs. code = FORBIDDEN'
+      content: {application/json: {schema: {$ref: '../schemas/common/error.schema.json'}}}
+    NotFound:
+      description: 'Unknown ID or path. code = NOT_FOUND'
+      content: {application/json: {schema: {$ref: '../schemas/common/error.schema.json'}}}
+    ValidationError:
+      description: 'Invalid parameter, header, body or cursor; details names the field. code = VALIDATION_ERROR'
+      content: {application/json: {schema: {$ref: '../schemas/common/error.schema.json'}}}
+    IdempotencyConflict:
+      description: 'Same Idempotency-Key, different body. Nothing changes. code = IDEMPOTENCY_CONFLICT'
+      content: {application/json: {schema: {$ref: '../schemas/common/error.schema.json'}}}

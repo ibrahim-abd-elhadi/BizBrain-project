@@ -1,4 +1,4 @@
-"""`brain-worker eval-assistant` (contracts/evaluation-set.md). Written first (T055).
+"""`brain-worker eval-assistant` (contracts/assistant/evaluation-set.md). Written first (T055).
 
 The command runs the set in one rolled-back transaction and writes a dated report; it exits 0 even
 when questions fail (a report, not a build gate), 2 when its preconditions fail.
