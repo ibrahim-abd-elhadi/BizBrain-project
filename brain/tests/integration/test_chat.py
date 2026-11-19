@@ -7,6 +7,8 @@ and the offline mapping run for real.
 
 from sqlalchemy import text
 
+from brain.assistant.graph import COULD_NOT_ANSWER
+
 from scripted_model import Call, Fail, Say, latest
 
 URL = "/api/v1/brain/assistant/messages"
@@ -94,13 +96,13 @@ def test_an_invented_number_twice_is_not_shown(first_night, api_client, manager,
     body = _ask(api_client, manager, "Which products are at high risk?").json()
     assert body["outcome"] == "not_grounded"
     assert body["reply"] == {
-        "text": "I couldn't answer that reliably. Please try rephrasing.",
+        "text": COULD_NOT_ANSWER["en"],
         "language": "en",
     }
     scripted(Call("get_risk_list", {}), Say("P003 لديه 987.65 يوم."), Say("P003 لديه 987.66 يوم."))
     body = _ask(api_client, manager, "ما المنتجات ذات الخطر العالي؟").json()
     assert body["outcome"] == "not_grounded" and body["reply"]["language"] == "ar"
-    assert body["reply"]["text"] == "تعذّر عليّ الإجابة بشكل موثوق. حاول إعادة صياغة السؤال."
+    assert body["reply"]["text"] == COULD_NOT_ANSWER["ar"]
 
 
 def test_a_reply_in_the_wrong_language_is_retried(
@@ -146,7 +148,7 @@ def test_too_many_tool_rounds_fall_back(first_night, api_client, manager, script
     scripted(*[Call("get_risk_list", {}) for _ in range(5)])
     body = _ask(api_client, manager, "Which products are at high risk?").json()
     assert body["outcome"] == "not_grounded"
-    assert body["reply"]["text"] == "I couldn't answer that reliably. Please try rephrasing."
+    assert body["reply"]["text"] == COULD_NOT_ANSWER["en"]
 
 
 def test_the_request_rules(first_night, api_client, manager, scripted) -> None:

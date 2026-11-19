@@ -22,7 +22,7 @@ from typing import Any
 
 from sqlalchemy import select
 
-from brain.assistant.grounding import Allowed
+from brain.assistant.grounding import Allowed, ids_in
 from brain.models import ProductRef, RiskResult
 from brain.proposals.service import REASON_WORDS, ProposalRefused, create_proposal
 
@@ -53,9 +53,38 @@ def _newest(ctx: Any, product_id: str) -> RiskResult | None:
     ).first()
 
 
+def _conversation_product(ctx: Any) -> str | None:
+    """The product the manager named most recently (newest message first)."""
+    for text in reversed(ctx.manager_texts or [ctx.manager_text]):
+        found = [i for i in ids_in(text) if i.startswith("P")]
+        if found:
+            # the last one written in that message
+            return max(found, key=lambda i: text.rfind(i))
+    return None
+
+
 def propose(ctx: Any, args: dict[str, Any]) -> dict[str, Any]:
     product_ids = args.get("product_ids")
     quantity = args.get("quantity")
+    # A follow-up that gives only a quantity ("25") names no product: the product comes from the
+    # conversation, also when the model lost it or sent one nobody named (live, 2026-11-19).
+    newest_names_one = any(i.startswith("P") for i in ids_in(ctx.manager_text))
+    if not product_ids:
+        product = _conversation_product(ctx)
+        if product is None:
+            return _refuse(ctx, "VALIDATION_ERROR", "which product? name the product to order")
+        product_ids = [product]
+    elif (
+        quantity is not None
+        and isinstance(product_ids, list)
+        and len(product_ids) == 1
+        and not newest_names_one
+        and isinstance(product_ids[0], str)
+        and ctx.session.get(ProductRef, product_ids[0]) is None
+    ):
+        product = _conversation_product(ctx)
+        if product is not None:
+            product_ids = [product]
     if (
         not isinstance(product_ids, list)
         or not 1 <= len(product_ids) <= 10

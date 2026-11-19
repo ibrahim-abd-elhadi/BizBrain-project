@@ -97,6 +97,7 @@ class Settings(BaseSettings):
     availability_offline_seconds: float = Field(default=30.0, ge=0)
     why_offline_memory_seconds: float = Field(default=30.0, ge=0)
     briefing_top_forecasts: int = Field(default=3, ge=1)
+    sales_top_products: int = Field(default=5, ge=1)  # the all-products sales summary
     briefing_forecast_days: int = Field(default=7, ge=1, le=14)
 
     @field_validator("gemini_thinking_level")

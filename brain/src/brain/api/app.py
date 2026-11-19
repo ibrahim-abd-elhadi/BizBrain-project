@@ -17,7 +17,22 @@ from brain.api.errors import register_error_handlers
 from brain.config import get_settings
 
 
+def _assistant_logging() -> None:
+    """brain-api prints the assistant's lines (tool calls at INFO, offline reasons at WARNING) to
+    stdout, so `docker compose logs brain-api` shows them."""
+    import logging
+    import sys
+
+    logger = logging.getLogger("brain.assistant")
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+
 def create_app() -> FastAPI:
+    _assistant_logging()
     public_key = load_public_key(get_settings().erp_jwt_public_key_file)
     app = FastAPI(
         title="BizBrain Brain API",
