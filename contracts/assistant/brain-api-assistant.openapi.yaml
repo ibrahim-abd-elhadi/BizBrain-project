@@ -191,7 +191,7 @@ components:
     ChatReply:
       type: object
       additionalProperties: false
-      required: [synthetic, outcome, reply, proposal, refusal]
+      required: [synthetic, outcome, reply, proposal, refusal, cards]
       properties:
         synthetic: { const: true }
         outcome:
@@ -216,6 +216,32 @@ components:
           oneOf: [{ $ref: '#/components/schemas/ChatProposal' }, { type: 'null' }]
         refusal:
           oneOf: [{ $ref: '#/components/schemas/ChatRefusal' }, { type: 'null' }]
+        cards:
+          description: |
+            Labeled figures built by code (never by the model) from this turn's sales, risk-list
+            and forecast tool results, at most four; drawn under the reply. The grounding guard
+            checks that numbers come from the data, not their labels; the cards carry the labels.
+          type: array
+          maxItems: 4
+          items: { $ref: '#/components/schemas/DataCard' }
+
+    DataCard:
+      type: object
+      additionalProperties: false
+      required: [kind, title, first_day, last_day, columns, rows, total]
+      properties:
+        kind: { enum: [sales_summary, sales_history, risk, forecast] }
+        title: { type: string }
+        first_day: { type: [string, 'null'], format: date }
+        last_day: { type: [string, 'null'], format: date }
+        columns: { type: array, minItems: 1, items: { type: string } }
+        rows:
+          type: array
+          items: { type: array, items: { type: [string, number, 'null'] } }
+        total:
+          oneOf:
+            - type: 'null'
+            - { type: array, items: { type: [string, number, 'null'] } }
 
     Briefing:
       type: object

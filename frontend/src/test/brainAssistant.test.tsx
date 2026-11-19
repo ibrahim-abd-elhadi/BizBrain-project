@@ -23,6 +23,7 @@ const answer = (text: string, language: "en" | "ar" = "en", extra: Record<string
   reply: { text, language },
   proposal: null,
   refusal: null,
+  cards: [],
   ...extra,
 });
 
@@ -240,5 +241,63 @@ describe("Assistant proposal cards (US2)", () => {
     await send("Prepare an order for P003");
     expect(await screen.findByTestId("proposal-card")).toBeInTheDocument();
     expect(screen.getAllByText("Assistant offline").length).toBeGreaterThan(0);
+  });
+});
+
+describe("Assistant data cards", () => {
+  beforeEach(() => sessionStorage.setItem("erp_token", "test-token"));
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    sessionStorage.clear();
+  });
+
+  const SALES_CARD = {
+    kind: "sales_summary",
+    title: "Sales, all products, 2026-11-12 to 2026-11-18 (7 closed days)",
+    first_day: "2026-11-12",
+    last_day: "2026-11-18",
+    columns: ["Product", "Sold", "Returned", "Net"],
+    rows: [
+      ["P001 Paracetamol 500 mg tablets", 376, 4, 372],
+      ["P016 Vitamin C 1000 mg effervescent tablets", 325, 9, 316],
+    ],
+    total: ["All products", 3033, 55, 2978],
+  };
+
+  it("draws the labeled figures under the reply, even when the text mislabels them", async () => {
+    mockApi((url) =>
+      url.includes("/assistant") && !url.includes("/messages")
+        ? json(AVAILABLE)
+        : json(answer("P001 had 376 net units this week.", "en", { cards: [SALES_CARD] })),
+    );
+    renderPage();
+    await screen.findByRole("textbox", { name: "Message" });
+    await send("give me a brief for our sales");
+    const card = await screen.findByTestId("data-card");
+    expect(card).toHaveTextContent("Sales, all products, 2026-11-12 to 2026-11-18");
+    const headers = within(card).getAllByRole("columnheader").map((h) => h.textContent);
+    expect(headers).toEqual(["Product", "Sold", "Returned", "Net"]);
+    const p001 = within(card).getByText("P001 Paracetamol 500 mg tablets").closest("tr") as HTMLElement;
+    expect(within(p001).getAllByRole("cell").map((c) => c.textContent)).toEqual([
+      "P001 Paracetamol 500 mg tablets",
+      "376",
+      "4",
+      "372",
+    ]);
+    expect(within(card).getByText("All products").closest("tr")).toHaveTextContent("2978");
+  });
+
+  it("keeps the card left to right under an Arabic reply", async () => {
+    mockApi((url) =>
+      url.includes("/assistant") && !url.includes("/messages")
+        ? json(AVAILABLE)
+        : json(answer("ملخص المبيعات: P001 صافي 372.", "ar", { cards: [SALES_CARD] })),
+    );
+    renderPage();
+    await screen.findByRole("textbox", { name: "Message" });
+    await send("أعطني ملخصًا لمبيعاتنا");
+    const card = await screen.findByTestId("data-card");
+    expect(card).toHaveAttribute("dir", "ltr");
+    expect(within(card).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Product", "Sold", "Returned", "Net"]);
   });
 });

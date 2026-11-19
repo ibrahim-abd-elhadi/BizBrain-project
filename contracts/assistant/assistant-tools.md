@@ -162,3 +162,18 @@ result = check(text, allowed)       # Grounded(ok: bool, unsupported: list[str])
 | "P999 has no stock" | no P999 | unsupported: P999 |
 | "sold 1,234 units" | 1234 | ok |
 | "on 2026-11-20" | dates up to 2026-11-17 | unsupported: 2026-11-20 |
+
+## Data cards (added 2026-11-19)
+
+The guard checks values, not labels. So when a turn used `get_sales_history`, `get_risk_list` or
+`get_forecast`, the chat reply also returns `cards`: tables built by code from those results
+(`brain.assistant.cards.build_cards`, at most four).
+
+| Tool result | Columns |
+|---|---|
+| sales, all products | Product, Sold, Returned, Net (top products; total row "All products") |
+| sales, one product | Date, Sold, Returned, Net (total row) |
+| risk list | Product, Risk, Days of cover, Lead time, Order (a reason in words when there's no order) |
+| forecast | Date, Forecast, Low, High (total row) |
+
+Results with an `error` give no card.

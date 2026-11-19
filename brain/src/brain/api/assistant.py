@@ -17,6 +17,7 @@ from brain.api.auth import require_manager
 from brain.api.errors import BrainError
 from brain.assistant import availability
 from brain.assistant import model as llm
+from brain.assistant.cards import build_cards
 from brain.assistant.graph import run_turn
 from brain.config import get_settings
 from brain.db import SessionDep
@@ -79,4 +80,6 @@ def send_message(body: ChatRequest, session: SessionDep) -> dict[str, Any]:
         else None,
         "proposal": result.proposal,
         "refusal": result.refusal,
+        # Labeled figures built by code from the tool results (the guard can't check labels).
+        "cards": build_cards(result.facts),
     }

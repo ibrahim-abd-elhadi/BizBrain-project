@@ -1,8 +1,17 @@
-import { Alert, Button, Card, Empty, Input, Space, Tag, Typography } from "antd";
+import { Alert, Button, Card, Empty, Input, Space, Table, Tag, Typography } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { BRAIN_BASE, apiFetch } from "../api/client";
-import type { Availability, ChatMessage, ChatProposal, ChatRefusal, ChatReply, Language } from "../api/brainTypes";
+import type {
+  Availability,
+  CardCell,
+  ChatMessage,
+  ChatProposal,
+  ChatRefusal,
+  ChatReply,
+  DataCard,
+  Language,
+} from "../api/brainTypes";
 import { messageOf } from "../api/useApiData";
 import { PageHeader } from "../components/PageHeader";
 import { detectLanguage, textDirection } from "./language";
@@ -10,8 +19,16 @@ import { SyntheticTag } from "./shared";
 
 /** One entry of the open conversation. Held in React state only: never stored (FR-021). */
 type Entry =
-  | { kind: "message"; role: "manager" | "assistant"; text: string; language: Language; proposal?: ChatProposal | null; refusal?: ChatRefusal | null }
-  | { kind: "offline"; proposal?: ChatProposal | null; refusal?: ChatRefusal | null }
+  | {
+      kind: "message";
+      role: "manager" | "assistant";
+      text: string;
+      language: Language;
+      proposal?: ChatProposal | null;
+      refusal?: ChatRefusal | null;
+      cards?: DataCard[];
+    }
+  | { kind: "offline"; proposal?: ChatProposal | null; refusal?: ChatRefusal | null; cards?: DataCard[] }
   | { kind: "error"; text: string };
 
 const MAX_MESSAGES = 20;
@@ -65,9 +82,43 @@ function RefusalCard({ refusal }: { refusal: ChatRefusal }) {
   );
 }
 
-function Cards({ proposal, refusal }: { proposal?: ChatProposal | null; refusal?: ChatRefusal | null }) {
+/** Labeled figures built by code from the tool results: the reply's numbers with their labels. */
+function DataCardTable({ card }: { card: DataCard }) {
+  const rows = [...card.rows, ...(card.total ? [card.total] : [])].map((cells, n) => ({
+    key: n,
+    total: card.total !== null && n === card.rows.length,
+    cells,
+  }));
+  const columns = card.columns.map((label, i) => ({
+    title: label,
+    key: label,
+    align: (i === 0 ? "start" : "end") as "start" | "end",
+    render: (_: unknown, row: { cells: CardCell[]; total: boolean }) => {
+      const value = row.cells[i] ?? "—";
+      return row.total ? <Typography.Text strong>{value}</Typography.Text> : value;
+    },
+  }));
+  return (
+    <Card size="small" className="chat-card data-card" data-testid="data-card" dir="ltr" title={card.title}>
+      <Table size="small" pagination={false} columns={columns} dataSource={rows} rowKey="key" />
+    </Card>
+  );
+}
+
+function Cards({
+  proposal,
+  refusal,
+  cards,
+}: {
+  proposal?: ChatProposal | null;
+  refusal?: ChatRefusal | null;
+  cards?: DataCard[];
+}) {
   return (
     <>
+      {(cards ?? []).map((card, n) => (
+        <DataCardTable key={n} card={card} />
+      ))}
       {proposal && <ProposalCard proposal={proposal} />}
       {refusal && <RefusalCard refusal={refusal} />}
     </>
@@ -126,7 +177,10 @@ export function AssistantPage() {
         BRAIN_BASE,
       );
       if (reply.outcome === "offline" || reply.reply === null) {
-        setEntries((current) => [...current, { kind: "offline", proposal: reply.proposal, refusal: reply.refusal }]);
+        setEntries((current) => [
+          ...current,
+          { kind: "offline", proposal: reply.proposal, refusal: reply.refusal, cards: reply.cards },
+        ]);
         setAvailability({ synthetic: true, available: false, reason: reply.offline_reason ?? "unreachable" });
       } else {
         setEntries((current) => [
@@ -138,6 +192,7 @@ export function AssistantPage() {
             language: reply.reply!.language,
             proposal: reply.proposal,
             refusal: reply.refusal,
+            cards: reply.cards,
           },
         ]);
         setAvailability({ synthetic: true, available: true, reason: null });
@@ -191,7 +246,7 @@ export function AssistantPage() {
                     <div data-testid="chat-message" data-role={entry.role} className="chat-bubble" {...direction}>
                       {entry.text}
                     </div>
-                    <Cards proposal={entry.proposal} refusal={entry.refusal} />
+                    <Cards proposal={entry.proposal} refusal={entry.refusal} cards={entry.cards} />
                   </div>
                 );
               }
@@ -199,7 +254,7 @@ export function AssistantPage() {
                 return (
                   <div key={n} className="chat-entry chat-assistant">
                     <Alert type="warning" showIcon title="Assistant offline" className="chat-note" />
-                    <Cards proposal={entry.proposal} refusal={entry.refusal} />
+                    <Cards proposal={entry.proposal} refusal={entry.refusal} cards={entry.cards} />
                   </div>
                 );
               return (

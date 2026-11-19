@@ -256,3 +256,8 @@ body {
 .full-width {
   inline-size: 100%;
 }
+
+/* Data cards: the labeled figures under a reply (always left to right). */
+.data-card {
+  min-inline-size: 360px;
+}

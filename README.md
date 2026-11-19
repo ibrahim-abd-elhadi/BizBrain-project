@@ -271,3 +271,4 @@ None of these were decided while scoping:
 - **Hidden demand:** forecasts learn recorded sales, so stock-outs hide real demand (D-35).
 - **No yearly seasonality:** 90 days of history can't capture it.
 - **Synthetic results:** every result comes from synthetic data.
+- The grounding guard checks that every number in an answer comes from the data, not that it carries the right label; data cards show the labeled figures.

@@ -192,6 +192,19 @@ export interface ChatRefusal {
   path: string | null;
 }
 
+export type CardCell = string | number | null;
+
+/** Labeled figures built by code from the turn's tool results (never by the model). */
+export interface DataCard {
+  kind: "sales_summary" | "sales_history" | "risk" | "forecast";
+  title: string;
+  first_day: string | null;
+  last_day: string | null;
+  columns: string[];
+  rows: CardCell[][];
+  total: CardCell[] | null;
+}
+
 export interface ChatReply {
   synthetic: true;
   outcome: "answered" | "not_grounded" | "offline";
@@ -199,6 +212,7 @@ export interface ChatReply {
   reply: { text: string; language: Language } | null;
   proposal: ChatProposal | null;
   refusal: ChatRefusal | null;
+  cards?: DataCard[];
 }
 
 export interface Briefing {
